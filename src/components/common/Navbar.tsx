@@ -11,16 +11,22 @@ import {
   ChevronDown,
   Sparkles,
   ShieldCheck,
+  User,
+  LogOut,
+  Package,
 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 import { LocationModal } from './LocationModal';
 import { STORE_PHONE_NUMBER, generateWhatsAppLink } from '../../utils/whatsapp';
 import { formatCurrency } from '../../utils/formatters';
 
 export const Navbar: React.FC = () => {
   const { totalItemCount, subtotal, setIsCartOpen } = useCart();
+  const { user, isAdmin, logout, profile } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState('Tiruchirappalli (620019)');
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
@@ -33,6 +39,24 @@ export const Navbar: React.FC = () => {
       setIsMobileMenuOpen(false);
     }
   };
+
+  const handleCartClick = () => {
+    if (!user) {
+      // Require login for cart access
+      navigate('/login', { state: { from: { pathname: '/cart' } } });
+    } else {
+      setIsCartOpen(true);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setIsUserMenuOpen(false);
+    setIsMobileMenuOpen(false);
+    navigate('/');
+  };
+
+  const displayName = profile?.fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'My Account';
 
   const navLinks = [
     { label: 'Home', path: '/' },
@@ -112,7 +136,7 @@ export const Navbar: React.FC = () => {
               </div>
             </Link>
 
-            {/* Location Selector (fsmart style) */}
+            {/* Location Selector */}
             <button
               onClick={() => setIsLocationModalOpen(true)}
               className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cream-100 hover:bg-cream-200 border border-cream-300 text-xs text-left transition-colors"
@@ -154,20 +178,76 @@ export const Navbar: React.FC = () => {
 
             {/* Action Buttons */}
             <div className="flex items-center gap-2 sm:gap-3">
-              {/* WhatsApp Quick Order button */}
-              <a
-                href={whatsappDirectUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-xl text-xs font-bold transition-all shadow-sm"
-              >
-                <MessageCircle className="w-4 h-4 text-emerald-600 fill-emerald-600" />
-                <span>WhatsApp Order</span>
-              </a>
+              {/* Customer Account / Sign In */}
+              {user ? (
+                <div className="relative">
+                  <button
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-cream-100 hover:bg-cream-200 border border-cream-300 text-xs text-slate-800 font-semibold transition-colors"
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-forest-900 text-amber-400 flex items-center justify-center">
+                      <User className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="hidden sm:inline max-w-[100px] truncate">{displayName}</span>
+                    <ChevronDown className="w-3 h-3 text-slate-500" />
+                  </button>
 
-              {/* Cart Button */}
+                  {/* Dropdown Menu */}
+                  {isUserMenuOpen && (
+                    <div className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-cream-200 py-2 z-50 animate-fade-in">
+                      <div className="px-4 py-2 border-b border-cream-100">
+                        <p className="text-xs font-bold text-slate-900 truncate">{displayName}</p>
+                        <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
+                      </div>
+
+                      <div className="py-1">
+                        <Link
+                          to="/my-orders"
+                          onClick={() => setIsUserMenuOpen(false)}
+                          className="flex items-center gap-2 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-cream-50 hover:text-forest-900"
+                        >
+                          <Package className="w-4 h-4 text-forest-700" />
+                          <span>My Orders</span>
+                        </Link>
+
+                        {isAdmin && (
+                          <Link
+                            to="/admin/dashboard"
+                            onClick={() => setIsUserMenuOpen(false)}
+                            className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-amber-800 hover:bg-amber-50"
+                          >
+                            <ShieldCheck className="w-4 h-4 text-amber-600" />
+                            <span>Admin Portal</span>
+                          </Link>
+                        )}
+                      </div>
+
+                      <div className="border-t border-cream-100 pt-1">
+                        <button
+                          onClick={handleLogout}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 text-left"
+                        >
+                          <LogOut className="w-4 h-4" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  state={{ from: location }}
+                  className="px-3.5 py-2 bg-cream-100 hover:bg-cream-200 text-forest-950 border border-cream-300 rounded-xl text-xs font-bold transition-all shadow-xs flex items-center gap-1.5"
+                >
+                  <User className="w-3.5 h-3.5 text-forest-800" />
+                  <span>Sign In</span>
+                </Link>
+              )}
+
+              {/* Cart Button (Requires Login) */}
               <button
-                onClick={() => setIsCartOpen(true)}
+                onClick={handleCartClick}
                 className="relative flex items-center gap-2.5 px-3.5 py-2 bg-forest-900 hover:bg-forest-950 text-white rounded-xl shadow-md hover:shadow-lg transition-all group"
                 aria-label="View shopping cart"
               >
@@ -242,6 +322,56 @@ export const Navbar: React.FC = () => {
         {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && (
           <div className="lg:hidden border-t border-cream-200 bg-white px-4 py-4 space-y-3 shadow-lg animate-fade-in">
+            {/* User Profile on Mobile */}
+            <div className="p-3 bg-cream-50 rounded-2xl border border-cream-200">
+              {user ? (
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-slate-900">{displayName}</p>
+                      <p className="text-[10px] text-slate-500">{user.email}</p>
+                    </div>
+                    <button
+                      onClick={handleLogout}
+                      className="text-xs font-bold text-rose-600 hover:text-rose-700 flex items-center gap-1"
+                    >
+                      <LogOut className="w-3 h-3" />
+                      <span>Logout</span>
+                    </button>
+                  </div>
+                  <div className="pt-2 border-t border-cream-200 flex flex-wrap gap-2">
+                    <Link
+                      to="/my-orders"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="px-3 py-1.5 bg-forest-900 text-white rounded-lg text-xs font-bold inline-flex items-center gap-1"
+                    >
+                      <Package className="w-3.5 h-3.5" />
+                      <span>My Orders</span>
+                    </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin/dashboard"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className="px-3 py-1.5 bg-amber-500 text-slate-950 rounded-lg text-xs font-bold inline-flex items-center gap-1"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        <span>Admin Portal</span>
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <Link
+                  to="/login"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 bg-forest-900 text-white rounded-xl text-xs font-bold shadow-sm"
+                >
+                  <User className="w-3.5 h-3.5" />
+                  <span>Customer Sign In / Register</span>
+                </Link>
+              )}
+            </div>
+
             <button
               onClick={() => {
                 setIsLocationModalOpen(true);

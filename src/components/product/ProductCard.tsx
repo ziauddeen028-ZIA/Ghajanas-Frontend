@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Star,
   ShoppingBag,
@@ -19,6 +19,8 @@ interface ProductCardProps {
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { addToCart } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [selectedWeight, setSelectedWeight] = useState<WeightOption>(
     product.weightOptions[0] || {
       id: 'default',
@@ -37,9 +39,14 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    addToCart(product, selectedWeight, 1);
-    setIsAddedRecently(true);
-    setTimeout(() => setIsAddedRecently(false), 1600);
+    const currentPath = location.pathname + location.search;
+    const added = addToCart(product, selectedWeight, 1, currentPath);
+    if (added) {
+      setIsAddedRecently(true);
+      setTimeout(() => setIsAddedRecently(false), 1600);
+    } else {
+      navigate('/login', { state: { from: location } });
+    }
   };
 
   const handleWhatsAppQuickOrder = (e: React.MouseEvent) => {

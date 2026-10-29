@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import type { CheckoutFormData, OrderDetails, CartItem } from '../types';
 import { formatCurrency, generateOrderId } from '../utils/formatters';
 import {
@@ -18,29 +19,57 @@ import {
   CheckCircle2,
   AlertCircle,
   Banknote,
+  QrCode,
+  Copy,
+  Check,
 } from 'lucide-react';
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const OWNER_UPI_ID = import.meta.env.VITE_OWNER_UPI_ID || '916382240715@upi';
+const OWNER_UPI_NAME = import.meta.env.VITE_OWNER_UPI_NAME || 'NJ Essentials / Ghajanas';
 
 export const CheckoutPage: React.FC = () => {
   const { cart, subtotal, deliveryFee, total, clearCart } = useCart();
+  const { user, token, profile, updateProfile } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<CheckoutFormData>({
-    fullName: '',
-    phone: '',
-    alternatePhone: '',
-    addressLine: '',
-    landmark: '',
-    city: 'Tiruchirappalli',
-    state: 'Tamil Nadu',
-    pincode: '',
-    deliveryNotes: '',
-    paymentMethod: 'whatsapp_order',
+    fullName: profile?.fullName || user?.user_metadata?.full_name || '',
+    phone: profile?.phone || user?.user_metadata?.phone || '',
+    alternatePhone: profile?.alternatePhone || '',
+    addressLine: profile?.addressLine || '',
+    landmark: profile?.landmark || '',
+    city: profile?.city || 'Tiruchirappalli',
+    state: profile?.state || 'Tamil Nadu',
+    pincode: profile?.pincode || '',
+    deliveryNotes: profile?.deliveryNotes || '',
+    paymentMethod: 'upi',
   });
 
+  const [saveToProfile, setSaveToProfile] = useState(true);
+  const [copiedUpi, setCopiedUpi] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof CheckoutFormData, string>>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
-  // If cart is empty, redirect or prompt to shop
+  // Sync profile when loaded
+  useEffect(() => {
+    if (profile) {
+      setFormData((prev) => ({
+        ...prev,
+        fullName: prev.fullName || profile.fullName || '',
+        phone: prev.phone || profile.phone || '',
+        alternatePhone: prev.alternatePhone || profile.alternatePhone || '',
+        addressLine: prev.addressLine || profile.addressLine || '',
+        landmark: prev.landmark || profile.landmark || '',
+        city: prev.city || profile.city || 'Tiruchirappalli',
+        state: prev.state || profile.state || 'Tamil Nadu',
+        pincode: prev.pincode || profile.pincode || '',
+        deliveryNotes: prev.deliveryNotes || profile.deliveryNotes || '',
+      }));
+    }
+  }, [profile]);
+
   if (cart.length === 0) {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center">
@@ -60,6 +89,12 @@ export const CheckoutPage: React.FC = () => {
       </div>
     );
   }
+
+  const handleCopyUpi = () => {
+    navigator.clipboard.writeText(OWNER_UPI_ID);
+    setCopiedUpi(true);
+    setTimeout(() => setCopiedUpi(false), 2000);
+  };
 
   const validate = (): boolean => {
     const newErrors: Partial<Record<keyof CheckoutFormData, string>> = {};
@@ -116,51 +151,118 @@ export const CheckoutPage: React.FC = () => {
     }
   };
 
-  const processOrderCompletion = (sendDirectToWhatsApp: boolean) => {
+  const processOrderCompletion = async (sendDirectToWhatsApp: boolean) => {
     if (!validate()) {
       window.scrollTo({ top: 150, behavior: 'smooth' });
       return;
     }
 
     setIsSubmitting(true);
-    const orderId = generateOrderId();
+    setApiError(null);
 
-    const orderDetails: OrderDetails = {
-      orderId,
+    // Save profile update if customer checked the checkbox
+    if (saveToProfile) {
+      updateProfile({
+        fullName: formData.fullName,
+        phone: formData.phone,
+        alternatePhone: formData.alternatePhone,
+        addressLine: formData.addressLine,
+        landmark: formData.landmark,
+        city: formData.city,
+        state: formData.state,
+        pincode: formData.pincode,
+        deliveryNotes: formData.deliveryNotes,
+      });
+    }
+
+    // Freeze permanent snapshot of delivery address for this order
+    const addressSnapshot = {
+      fullName: formData.fullName,
+      phone: formData.phone,
+      alternatePhone: formData.alternatePhone,
+      addressLine: formData.addressLine,
+      landmark: formData.landmark,
+      city: formData.city,
+      state: formData.state,
+      pincode: formData.pincode,
+      deliveryNotes: formData.deliveryNotes,
+    };
+
+    let confirmedOrderId = generateOrderId();
+    let savedOrderPayload: OrderDetails = {
+      orderId: confirmedOrderId,
       items: [...cart],
       subtotal,
       deliveryFee,
       discount: 0,
       total,
-      customer: { ...formData },
+      customer: { ...formData, ...addressSnapshot },
+      paymentMethod: formData.paymentMethod,
+      paymentStatus: 'Unpaid', // Initial payment status: Unpaid until verified
+      orderStatus: 'Received',
       createdAt: new Date().toISOString(),
     };
 
-    // Store in sessionStorage so OrderSuccessPage can display it nicely
+    // Save order in backend before opening WhatsApp
+    if (token) {
+      try {
+        const res = await fetch(`${API_BASE_URL}/orders`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            items: cart,
+            subtotal,
+            deliveryFee,
+            discount: 0,
+            total,
+            customer: addressSnapshot,
+            paymentMethod: formData.paymentMethod,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.order) {
+            savedOrderPayload = data.order;
+            confirmedOrderId = data.order.orderId;
+          }
+        } else {
+          const errData = await res.json().catch(() => ({}));
+          console.warn('Backend order recording notice:', errData.error);
+        }
+      } catch (e) {
+        console.warn('Order saved locally (backend unreachable in Phase 1)');
+      }
+    }
+
+    // Persist to session storage for the success confirmation screen
     try {
-      sessionStorage.setItem('nj_last_order', JSON.stringify(orderDetails));
+      sessionStorage.setItem('nj_last_order', JSON.stringify(savedOrderPayload));
     } catch (e) {
       console.error(e);
     }
 
-    // Prepare WhatsApp Message
+    // Prepare WhatsApp Message with the confirmed order ID and snapshot details
     const whatsappMessage = createOrderWhatsAppMessage(
-      orderId,
-      formData,
+      confirmedOrderId,
+      savedOrderPayload.customer,
       cart,
       subtotal,
       deliveryFee,
       total
     );
 
-    // If customer selected "Order on WhatsApp", open WhatsApp in a new tab
+    // Open WhatsApp if chosen
     if (sendDirectToWhatsApp || formData.paymentMethod === 'whatsapp_order') {
       const whatsappUrl = generateWhatsAppLink(whatsappMessage, STORE_PHONE_NUMBER);
       window.open(whatsappUrl, '_blank');
     }
 
-    // Clear cart and redirect to OrderSuccessPage
     clearCart();
+    setIsSubmitting(false);
     navigate('/order-success');
   };
 
@@ -173,7 +275,7 @@ export const CheckoutPage: React.FC = () => {
             Delivery & Checkout
           </h1>
           <p className="text-xs text-slate-500 mt-1">
-            Provide your address for fast doorstep delivery
+            Signed in as <strong>{user?.email}</strong>
           </p>
         </div>
         <Link
@@ -185,17 +287,26 @@ export const CheckoutPage: React.FC = () => {
         </Link>
       </div>
 
+      {apiError && (
+        <div className="mb-6 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-800 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{apiError}</span>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-start">
         {/* Left Form: Delivery Address */}
         <div className="lg:col-span-7 bg-white rounded-3xl p-6 sm:p-8 border border-cream-200 shadow-sm space-y-6">
-          <div>
-            <h2 className="font-serif font-bold text-lg text-slate-900 flex items-center gap-2 mb-1">
-              <MapPin className="w-5 h-5 text-forest-700" />
-              Customer & Delivery Information
-            </h2>
-            <p className="text-xs text-slate-500">
-              We ensure safe and moisture-resistant packaging for all groceries.
-            </p>
+          <div className="flex items-center justify-between pb-3 border-b border-cream-200">
+            <div>
+              <h2 className="font-serif font-bold text-lg text-slate-900 flex items-center gap-2">
+                <MapPin className="w-5 h-5 text-forest-700" />
+                Customer & Delivery Information
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Saved details from your customer profile are pre-filled below.
+              </p>
+            </div>
           </div>
 
           <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
@@ -268,11 +379,6 @@ export const CheckoutPage: React.FC = () => {
                   onChange={handleInputChange}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-cream-300 bg-cream-50 focus:bg-white text-sm focus:outline-none focus:ring-2 focus:ring-forest-600"
                 />
-                {errors.alternatePhone && (
-                  <p className="text-xs text-rose-500 mt-1 flex items-center gap-1 font-medium">
-                    <AlertCircle className="w-3.5 h-3.5" /> {errors.alternatePhone}
-                  </p>
-                )}
               </div>
             </div>
 
@@ -333,9 +439,6 @@ export const CheckoutPage: React.FC = () => {
                       : 'border-cream-300 bg-cream-50 focus:bg-white focus:ring-2 focus:ring-forest-600'
                   }`}
                 />
-                {errors.city && (
-                  <p className="text-xs text-rose-500 mt-1">{errors.city}</p>
-                )}
               </div>
 
               <div>
@@ -381,7 +484,7 @@ export const CheckoutPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Delivery Notes */}
+            {/* Special Delivery Instructions */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
                 Special Delivery Instructions <span className="text-slate-400 font-normal">(Optional)</span>
@@ -396,42 +499,101 @@ export const CheckoutPage: React.FC = () => {
               />
             </div>
 
-            {/* Payment Method Selector */}
-            <div className="pt-4 border-t border-cream-200">
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
-                Select Ordering & Payment Method:
+            {/* Save to Profile Checkbox */}
+            <div className="pt-2">
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-700 font-medium">
+                <input
+                  type="checkbox"
+                  checked={saveToProfile}
+                  onChange={(e) => setSaveToProfile(e.target.checked)}
+                  className="rounded text-forest-800 focus:ring-forest-600 w-4 h-4"
+                />
+                <span>Save these delivery details in my profile for future orders</span>
               </label>
-              <div className="space-y-2.5">
-                {/* Option 1: WhatsApp Fast Order */}
+              <p className="text-[11px] text-slate-400 ml-6 mt-0.5">
+                Note: Updating your profile never alters past order address records.
+              </p>
+            </div>
+
+            {/* Payment Method Selector */}
+            <div className="pt-5 border-t border-cream-200">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-3">
+                Select Payment Method:
+              </label>
+              <div className="space-y-3">
+                {/* Option 1: Direct UPI */}
                 <label
-                  className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${
-                    formData.paymentMethod === 'whatsapp_order'
+                  className={`flex flex-col p-4 rounded-2xl border cursor-pointer transition-all ${
+                    formData.paymentMethod === 'upi'
                       ? 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20'
                       : 'border-cream-300 hover:bg-cream-50'
                   }`}
                 >
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="whatsapp_order"
-                    checked={formData.paymentMethod === 'whatsapp_order'}
-                    onChange={handleInputChange}
-                    className="mt-1 text-emerald-600 focus:ring-emerald-500"
-                  />
-                  <div>
-                    <span className="font-bold text-sm text-slate-900 flex items-center gap-1.5">
-                      <MessageCircle className="w-4 h-4 text-emerald-600 fill-emerald-600" />
-                      Order via WhatsApp & Pay via UPI (Recommended)
-                    </span>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Sends your complete order and address directly to our order desk. Pay easily via GPay, PhonePe, or Paytm.
-                    </p>
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="upi"
+                      checked={formData.paymentMethod === 'upi'}
+                      onChange={handleInputChange}
+                      className="mt-1 text-emerald-600 focus:ring-emerald-500"
+                    />
+                    <div className="flex-1">
+                      <span className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                        <QrCode className="w-4 h-4 text-emerald-600" />
+                        <span>Direct UPI Payment (GPay, PhonePe, Paytm)</span>
+                      </span>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Transfer payment directly to store owner's verified UPI account.
+                      </p>
+                    </div>
                   </div>
+
+                  {/* UPI Details Box */}
+                  {formData.paymentMethod === 'upi' && (
+                    <div className="mt-3 p-3 bg-white rounded-xl border border-emerald-200 text-xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase font-bold block">
+                            Owner UPI ID:
+                          </span>
+                          <span className="font-mono font-bold text-emerald-900 text-sm">
+                            {OWNER_UPI_ID}
+                          </span>
+                          <span className="text-[11px] text-slate-500 block">
+                            Name: {OWNER_UPI_NAME}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleCopyUpi}
+                          className="px-2.5 py-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 font-semibold flex items-center gap-1 text-[11px]"
+                        >
+                          {copiedUpi ? (
+                            <>
+                              <Check className="w-3.5 h-3.5 text-emerald-700" />
+                              <span>Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3.5 h-3.5 text-emerald-700" />
+                              <span>Copy UPI ID</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-slate-500 pt-1 border-t border-cream-200">
+                        1. Pay <strong>{formatCurrency(total)}</strong> to the UPI ID above.<br />
+                        2. Keep your UPI reference ID or screenshot ready.<br />
+                        3. Your order will be created as <em>Unpaid</em> and manually verified by the store admin upon dispatch.
+                      </p>
+                    </div>
+                  )}
                 </label>
 
-                {/* Option 2: COD */}
+                {/* Option 2: Cash on Delivery (COD) */}
                 <label
-                  className={`flex items-start gap-3 p-3.5 rounded-2xl border cursor-pointer transition-all ${
+                  className={`flex items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-all ${
                     formData.paymentMethod === 'cod'
                       ? 'bg-forest-50/80 border-forest-600 ring-2 ring-forest-600/20'
                       : 'border-cream-300 hover:bg-cream-50'
@@ -451,7 +613,7 @@ export const CheckoutPage: React.FC = () => {
                       Cash on Delivery (COD)
                     </span>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      Pay cash directly to the courier executive upon receipt at your doorstep.
+                      Pay cash to the delivery courier upon arrival at your doorstep. Initial status is Unpaid until collection.
                     </p>
                   </div>
                 </label>
@@ -519,17 +681,23 @@ export const CheckoutPage: React.FC = () => {
               type="button"
               disabled={isSubmitting}
               onClick={() => processOrderCompletion(true)}
-              className="w-full py-4 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-extrabold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all"
+              className="w-full py-4 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-extrabold flex items-center justify-center gap-2 shadow-lg hover:shadow-xl transition-all disabled:opacity-60"
             >
-              <MessageCircle className="w-5 h-5 fill-white" />
-              <span>Order on WhatsApp (Instant Confirm)</span>
+              {isSubmitting ? (
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <MessageCircle className="w-5 h-5 fill-white" />
+                  <span>Place Order & Open WhatsApp</span>
+                </>
+              )}
             </button>
 
             <button
               type="button"
               disabled={isSubmitting}
               onClick={() => processOrderCompletion(false)}
-              className="w-full py-3 px-4 bg-forest-900 hover:bg-forest-950 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all"
+              className="w-full py-3 px-4 bg-forest-900 hover:bg-forest-950 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-60"
             >
               <CheckCircle2 className="w-4 h-4 text-amber-400" />
               <span>Confirm Order Directly</span>
@@ -540,7 +708,7 @@ export const CheckoutPage: React.FC = () => {
           <div className="p-3.5 bg-cream-50 rounded-2xl border border-cream-200 flex items-center gap-3 text-xs text-slate-600">
             <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0" />
             <span>
-              100% Satisfaction Guarantee. Fresh farm packaging and full transit insurance included.
+              100% Native Quality Guarantee. Farm-gate unadulterated essentials.
             </span>
           </div>
         </div>

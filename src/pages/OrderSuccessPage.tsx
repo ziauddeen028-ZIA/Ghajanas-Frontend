@@ -202,14 +202,20 @@ export const OrderSuccessPage: React.FC = () => {
       )}
 
       {/* Bottom CTA */}
-      <div className="text-center">
+      <div className="flex flex-wrap items-center justify-center gap-3">
         <Link
-          to="/products"
+          to="/my-orders"
           className="px-6 py-3.5 bg-forest-900 hover:bg-forest-950 text-white rounded-xl text-sm font-bold inline-flex items-center gap-2 shadow-md transition-all"
         >
           <ShoppingBag className="w-4 h-4 text-amber-400" />
-          <span>Continue Shopping</span>
+          <span>View My Orders</span>
           <ArrowRight className="w-4 h-4" />
+        </Link>
+        <Link
+          to="/products"
+          className="px-6 py-3.5 bg-cream-200 hover:bg-cream-300 text-slate-800 rounded-xl text-sm font-bold inline-flex items-center gap-2 transition-all"
+        >
+          <span>Continue Shopping</span>
         </Link>
       </div>
     </div>

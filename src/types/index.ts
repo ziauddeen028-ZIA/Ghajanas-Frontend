@@ -51,6 +51,10 @@ export interface CartItem {
   quantity: number;
 }
 
+export type PaymentMethod = 'whatsapp_order' | 'cod' | 'upi';
+export type PaymentStatus = 'Unpaid' | 'Paid';
+export type OrderStatus = 'Received' | 'Processing' | 'Dispatched' | 'Delivered' | 'Cancelled';
+
 export interface CheckoutFormData {
   fullName: string;
   phone: string;
@@ -61,16 +65,42 @@ export interface CheckoutFormData {
   state: string;
   pincode: string;
   deliveryNotes?: string;
-  paymentMethod: 'whatsapp_order' | 'cod' | 'upi';
+  paymentMethod: PaymentMethod;
+}
+
+export interface CustomerProfile {
+  userId?: string;
+  fullName: string;
+  phone: string;
+  alternatePhone?: string;
+  addressLine: string;
+  landmark?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  deliveryNotes?: string;
 }
 
 export interface OrderDetails {
   orderId: string;
+  userId?: string;
+  userEmail?: string;
   items: CartItem[];
   subtotal: number;
   deliveryFee: number;
   discount: number;
   total: number;
-  customer: CheckoutFormData;
+  customer: CheckoutFormData; // Frozen address snapshot
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus; // Defaults to Unpaid; Admin verifies UPI/COD manually
+  orderStatus: OrderStatus; // Defaults to Received
   createdAt: string;
+  updatedAt?: string;
+}
+
+export interface PendingCartAction {
+  product: Product;
+  selectedWeight: WeightOption;
+  quantity: number;
+  returnUrl?: string;
 }

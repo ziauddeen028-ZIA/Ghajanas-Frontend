@@ -1,7 +1,7 @@
 import type { CartItem, CheckoutFormData, Product, WeightOption } from '../types';
 import { formatCurrency } from './formatters';
 
-export const STORE_PHONE_NUMBER = '919876543210'; // NJ Essentials Customer Care / Order Desk
+export const STORE_PHONE_NUMBER = '916382240715'; // NJ Essentials Customer Care / Order Desk
 
 /**
  * Creates a prefilled WhatsApp order message for the complete checkout order.

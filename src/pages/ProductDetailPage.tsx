@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { products } from '../data/products';
 import { useCart } from '../context/CartContext';
 import type { WeightOption } from '../types';
@@ -25,6 +25,8 @@ import {
 export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const { addToCart, setIsCartOpen } = useCart();
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const product = products.find((p) => p.slug === slug);
 
@@ -59,10 +61,15 @@ export const ProductDetailPage: React.FC = () => {
   );
 
   const handleAddToCart = () => {
-    addToCart(product, selectedWeight, quantity);
-    setIsAddedFeedback(true);
-    setTimeout(() => setIsAddedFeedback(false), 1800);
-    setIsCartOpen(true);
+    const currentPath = location.pathname + location.search;
+    const added = addToCart(product, selectedWeight, quantity, currentPath);
+    if (added) {
+      setIsAddedFeedback(true);
+      setTimeout(() => setIsAddedFeedback(false), 1800);
+      setIsCartOpen(true);
+    } else {
+      navigate('/login', { state: { from: location } });
+    }
   };
 
   const handleOrderOnWhatsApp = () => {
