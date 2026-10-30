@@ -10,7 +10,6 @@ import {
   ArrowRight,
   Sparkles,
   AlertCircle,
-  CheckCircle2,
 } from 'lucide-react';
 
 export const SignUpPage: React.FC = () => {
@@ -25,18 +24,18 @@ export const SignUpPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [successNotice, setSuccessNotice] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const redirectDestination =
-    location.state?.from?.pathname ||
-    pendingCartAction?.returnUrl ||
-    '/';
+    location.state?.from
+      ? typeof location.state.from === 'string'
+        ? location.state.from
+        : (location.state.from.pathname || '/') + (location.state.from.search || '')
+      : pendingCartAction?.returnUrl || '/';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    setSuccessNotice(null);
 
     if (!fullName.trim() || !email.trim() || !phone.trim() || !password) {
       setError('Please fill in all required fields.');
@@ -68,18 +67,12 @@ export const SignUpPage: React.FC = () => {
       return;
     }
 
-    if (result.needsEmailVerification) {
-      setSuccessNotice(
-        'Account created! A confirmation email has been sent. Please verify your email before logging in.'
-      );
-      return;
-    }
-
-    // Auto-login succeeded, fulfill pending action if any
+    // Auto-login succeeded immediately: fulfill pending cart action if any
     if (pendingCartAction) {
       fulfillPendingCartAction();
     }
 
+    // Immediately navigate to homepage or requested destination
     navigate(redirectDestination, { replace: true });
   };
 
@@ -114,140 +107,134 @@ export const SignUpPage: React.FC = () => {
           </div>
         )}
 
-        {/* Success Notice */}
-        {successNotice && (
-          <div className="mb-5 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-xs text-emerald-800 flex items-start gap-2.5">
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-            <div>
-              <p className="font-bold">Registration Successful!</p>
-              <p className="text-[11px] mt-1">{successNotice}</p>
-              <Link
-                to="/login"
-                className="inline-block mt-2 font-bold text-forest-900 underline"
-              >
-                Proceed to Sign In →
-              </Link>
-            </div>
-          </div>
-        )}
-
         {/* Error Alert */}
         {error && (
           <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-            <span>{error}</span>
+            <div className="flex-1">
+              <span>{error}</span>
+              {error.toLowerCase().includes('already exists') && (
+                <div className="mt-1.5">
+                  <Link
+                    to="/login"
+                    state={location.state}
+                    className="font-bold text-forest-900 hover:text-forest-950 underline underline-offset-2"
+                  >
+                    Click here to Sign In →
+                  </Link>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
         {/* Form */}
-        {!successNotice && (
-          <form onSubmit={handleSubmit} className="space-y-3.5">
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              Full Name <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                placeholder="e.g. Senthil Kumar"
+                required
+                className="w-full px-3.5 py-2.5 pl-10 rounded-xl border border-cream-300 bg-cream-50 focus:bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-600 transition-all"
+              />
+              <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              Mobile Number <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="tel"
+                maxLength={10}
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="e.g. 9876543210"
+                required
+                className="w-full px-3.5 py-2.5 pl-10 rounded-xl border border-cream-300 bg-cream-50 focus:bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-600 transition-all"
+              />
+              <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+              Email Address <span className="text-rose-500">*</span>
+            </label>
+            <div className="relative">
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                required
+                className="w-full px-3.5 py-2.5 pl-10 rounded-xl border border-cream-300 bg-cream-50 focus:bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-600 transition-all"
+              />
+              <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Full Name <span className="text-rose-500">*</span>
+                Password <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <input
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="e.g. Senthil Kumar"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Min 6 chars"
                   required
-                  className="w-full px-3.5 py-2.5 pl-10 rounded-xl border border-cream-300 bg-cream-50 focus:bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-600 transition-all"
+                  className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-cream-300 bg-cream-50 focus:bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-600 transition-all"
                 />
-                <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
             </div>
 
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Mobile Number <span className="text-rose-500">*</span>
+                Confirm Password <span className="text-rose-500">*</span>
               </label>
               <div className="relative">
                 <input
-                  type="tel"
-                  maxLength={10}
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="e.g. 9876543210"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Repeat password"
                   required
-                  className="w-full px-3.5 py-2.5 pl-10 rounded-xl border border-cream-300 bg-cream-50 focus:bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-600 transition-all"
+                  className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-cream-300 bg-cream-50 focus:bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-600 transition-all"
                 />
-                <Phone className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               </div>
             </div>
+          </div>
 
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Email Address <span className="text-rose-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  required
-                  className="w-full px-3.5 py-2.5 pl-10 rounded-xl border border-cream-300 bg-cream-50 focus:bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-600 transition-all"
-                />
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Password <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Min 6 chars"
-                    required
-                    className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-cream-300 bg-cream-50 focus:bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-600 transition-all"
-                  />
-                  <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Confirm Password <span className="text-rose-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Repeat password"
-                    required
-                    className="w-full px-3.5 py-2.5 pl-9 rounded-xl border border-cream-300 bg-cream-50 focus:bg-white text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-forest-600 transition-all"
-                  />
-                  <Lock className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                </div>
-              </div>
-            </div>
-
-            <div className="pt-2">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3.5 px-4 bg-forest-900 hover:bg-forest-950 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-60"
-              >
-                {isLoading ? (
-                  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <span>Create Account</span>
-                    <ArrowRight className="w-4 h-4 text-amber-400" />
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        )}
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-3.5 px-4 bg-forest-900 hover:bg-forest-950 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-60"
+            >
+              {isLoading ? (
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <span>Create Account</span>
+                  <ArrowRight className="w-4 h-4 text-amber-400" />
+                </>
+              )}
+            </button>
+          </div>
+        </form>
 
         {/* Switch to Login */}
         <div className="mt-6 pt-5 border-t border-cream-200 text-center">
@@ -266,4 +253,3 @@ export const SignUpPage: React.FC = () => {
     </div>
   );
 };
-

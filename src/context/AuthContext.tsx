@@ -22,7 +22,7 @@ interface AuthContextType {
     password: string,
     fullName: string,
     phone: string
-  ) => Promise<{ error: string | null; needsEmailVerification?: boolean }>;
+  ) => Promise<{ error: string | null }>;
   logout: () => Promise<void>;
   setPendingCartAction: (action: PendingCartAction | null) => void;
   consumePendingCartAction: () => PendingCartAction | null;
@@ -129,6 +129,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Quick client-side check on app_metadata (cannot be tampered by user)
     const hasAdminRole = currentUser.app_metadata?.role === 'admin';
 
+    // DIAGNOSTIC — remove after confirming admin auth works
+    console.log('[ADMIN-CHECK] email:', currentUser.email);
+    console.log('[ADMIN-CHECK] app_metadata:', JSON.stringify(currentUser.app_metadata));
+    console.log('[ADMIN-CHECK] hasAdminRole (client-side):', hasAdminRole);
+    console.log('[ADMIN-CHECK] token present:', !!currentToken, '| token length:', currentToken?.length);
+
     // Verify with backend admin verification endpoint if token is present
     if (currentToken) {
       try {
@@ -137,6 +143,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             Authorization: `Bearer ${currentToken}`,
           },
         });
+        // DIAGNOSTIC — remove after confirming admin auth works
+        console.log('[ADMIN-CHECK] backend /auth/admin/verify response status:', res.status);
         if (res.ok) {
           setIsAdmin(true);
           return true;
@@ -221,31 +229,84 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     password: string,
     fullName: string,
     phone: string
-  ): Promise<{ error: string | null; needsEmailVerification?: boolean }> => {
+  ): Promise<{ error: string | null }> => {
     try {
+      const cleanEmail = email.trim().toLowerCase();
+      const cleanName = fullName.trim();
+      const cleanPhone = phone.trim();
+
       const { data, error } = await supabase.auth.signUp({
-        email: email.trim(),
+        email: cleanEmail,
         password,
         options: {
           data: {
-            full_name: fullName.trim(),
-            phone: phone.trim(),
+            full_name: cleanName,
+            phone: cleanPhone,
           },
         },
       });
 
       if (error) {
+        const errMsg = error.message.toLowerCase();
+        if (
+          errMsg.includes('already registered') ||
+          errMsg.includes('already exists') ||
+          errMsg.includes('unique constraint') ||
+          error.status === 422
+        ) {
+          return {
+            error: 'An account with this email address already exists. Please sign in instead.',
+          };
+        }
         return { error: error.message };
       }
 
-      // Check if session was granted immediately (auto-confirm enabled)
-      if (data.session && data.user) {
-        setSession(data.session);
-        setUser(data.user);
+      // Check for Supabase user enumeration protection indicator for existing user
+      // When email exists and enumeration protection is on, user is returned with empty identities and session is null
+      if (
+        data.user &&
+        Array.isArray(data.user.identities) &&
+        data.user.identities.length === 0
+      ) {
+        return {
+          error: 'An account with this email address already exists. Please sign in instead.',
+        };
+      }
+
+      let activeSession = data.session;
+      let activeUser = data.user;
+
+      // If session wasn't returned directly by signUp, immediately sign in with password to establish session
+      if (!activeSession) {
+        const signInResult = await supabase.auth.signInWithPassword({
+          email: cleanEmail,
+          password,
+        });
+
+        if (signInResult.error) {
+          const signInErrMsg = signInResult.error.message.toLowerCase();
+          if (
+            signInErrMsg.includes('invalid login credentials') ||
+            signInErrMsg.includes('invalid credentials')
+          ) {
+            return {
+              error: 'An account with this email address already exists. Please sign in instead.',
+            };
+          }
+          return { error: signInResult.error.message };
+        }
+
+        activeSession = signInResult.data.session;
+        activeUser = signInResult.data.user;
+      }
+
+      if (activeSession && activeUser) {
+        setSession(activeSession);
+        setUser(activeUser);
 
         const initialProfile: CustomerProfile = {
-          fullName: fullName.trim(),
-          phone: phone.trim(),
+          fullName: cleanName,
+          phone: cleanPhone,
           alternatePhone: '',
           addressLine: '',
           landmark: '',
@@ -255,18 +316,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           deliveryNotes: '',
         };
         setProfile(initialProfile);
+
         try {
           localStorage.setItem(
-            `${PROFILE_STORAGE_KEY}_${data.user.id}`,
+            `${PROFILE_STORAGE_KEY}_${activeUser.id}`,
             JSON.stringify(initialProfile)
           );
-        } catch {}
+        } catch (e) {
+          console.error('Failed to save initial profile locally:', e);
+        }
 
-        return { error: null, needsEmailVerification: false };
+        if (activeSession.access_token) {
+          try {
+            await fetch(`${API_BASE_URL}/profile`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${activeSession.access_token}`,
+              },
+              body: JSON.stringify(initialProfile),
+            });
+          } catch {
+            // Ignore backend sync failure in Phase 1
+          }
+        }
+
+        await checkAdminPrivileges(activeUser, activeSession.access_token);
+        return { error: null };
       }
 
-      // User created but waiting for email confirmation
-      return { error: null, needsEmailVerification: true };
+      return { error: 'Failed to create active session. Please try logging in.' };
     } catch (err: any) {
       return { error: err.message || 'Signup failed. Please try again.' };
     }
@@ -323,9 +402,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return { error: null };
   };
 
-  const verifyAdminStatus = async (): Promise<boolean> => {
-    return checkAdminPrivileges(user, session?.access_token || null);
-  };
+const verifyAdminStatus = async (): Promise<boolean> => {
+  try {
+    // Get the latest Supabase session instead of relying on stale React state
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error || !data.session || !data.session.user) {
+      setIsAdmin(false);
+      return false;
+    }
+
+    const currentSession = data.session;
+    const currentUser = currentSession.user;
+
+    // Verify admin permissions using the latest authenticated session
+    const isVerified = await checkAdminPrivileges(
+      currentUser,
+      currentSession.access_token
+    );
+
+    setIsAdmin(isVerified);
+
+    return isVerified;
+  } catch (error) {
+    console.error('Admin verification failed:', error);
+    setIsAdmin(false);
+    return false;
+  }
+};
 
   return (
     <AuthContext.Provider

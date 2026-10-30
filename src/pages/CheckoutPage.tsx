@@ -16,7 +16,6 @@ import {
   MapPin,
   User,
   Phone,
-  CheckCircle2,
   AlertCircle,
   Banknote,
   QrCode,
@@ -693,15 +692,7 @@ export const CheckoutPage: React.FC = () => {
               )}
             </button>
 
-            <button
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => processOrderCompletion(false)}
-              className="w-full py-3 px-4 bg-forest-900 hover:bg-forest-950 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all disabled:opacity-60"
-            >
-              <CheckCircle2 className="w-4 h-4 text-amber-400" />
-              <span>Confirm Order Directly</span>
-            </button>
+
           </div>
 
           {/* Guarantee Pill */}

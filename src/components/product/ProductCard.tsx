@@ -4,14 +4,12 @@ import {
   Star,
   ShoppingBag,
   Check,
-  MessageCircle,
   MapPin,
   Sparkles,
 } from 'lucide-react';
 import type { Product, WeightOption } from '../../types';
 import { useCart } from '../../context/CartContext';
 import { formatCurrency, calculateDiscountPercent } from '../../utils/formatters';
-import { createSingleProductWhatsAppMessage, generateWhatsAppLink } from '../../utils/whatsapp';
 
 interface ProductCardProps {
   product: Product;
@@ -47,13 +45,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     } else {
       navigate('/login', { state: { from: location } });
     }
-  };
-
-  const handleWhatsAppQuickOrder = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const msg = createSingleProductWhatsAppMessage(product, selectedWeight, 1);
-    window.open(generateWhatsAppLink(msg), '_blank');
   };
 
   return (
@@ -170,12 +161,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-5 gap-2">
+        <div className="w-full">
           <button
             type="button"
             onClick={handleAddToCart}
             disabled={!selectedWeight.inStock}
-            className={`col-span-4 py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm ${
+            className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm ${
               isAddedRecently
                 ? 'bg-emerald-600 text-white'
                 : selectedWeight.inStock
@@ -196,14 +187,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             )}
           </button>
 
-          <button
-            type="button"
-            onClick={handleWhatsAppQuickOrder}
-            title="Order directly on WhatsApp"
-            className="col-span-1 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-300 flex items-center justify-center transition-all shadow-sm"
-          >
-            <MessageCircle className="w-4 h-4 text-emerald-600 fill-emerald-600" />
-          </button>
         </div>
       </div>
     </div>

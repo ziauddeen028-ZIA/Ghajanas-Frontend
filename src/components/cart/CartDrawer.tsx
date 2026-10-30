@@ -7,13 +7,11 @@ import {
   Minus,
   Trash2,
   ArrowRight,
-  MessageCircle,
   ShieldCheck,
   Truck,
 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { formatCurrency } from '../../utils/formatters';
-import { generateWhatsAppLink, STORE_PHONE_NUMBER } from '../../utils/whatsapp';
 
 export const CartDrawer: React.FC = () => {
   const {
@@ -35,19 +33,6 @@ export const CartDrawer: React.FC = () => {
 
   const amountNeededForFreeDelivery = Math.max(0, freeDeliveryThreshold - subtotal);
   const progressPercent = Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100));
-
-  const handleWhatsAppQuickCartOrder = () => {
-    const itemLines = cart
-      .map(
-        (item, idx) =>
-          `${idx + 1}. *${item.productName}* (${item.selectedWeight.label})\n   Qty: ${item.quantity} x ${formatCurrency(item.selectedWeight.price)} = *${formatCurrency(item.selectedWeight.price * item.quantity)}*`
-      )
-      .join('\n\n');
-
-    const msg = `🌿 *CART INQUIRY / DIRECT ORDER - NJ ESSENTIALS* 🌿\n\nHello! I would like to place an order for the following items:\n\n${itemLines}\n\n-------------------------\n*Subtotal:* ${formatCurrency(subtotal)}\n*Delivery:* ${deliveryFee === 0 ? 'FREE' : formatCurrency(deliveryFee)}\n*Estimated Total:* ${formatCurrency(total)}\n-------------------------\nPlease confirm stock and guide me on payment & delivery.`;
-
-    window.open(generateWhatsAppLink(msg, STORE_PHONE_NUMBER), '_blank');
-  };
 
   const handleProceedToCheckout = () => {
     setIsCartOpen(false);
@@ -253,14 +238,6 @@ export const CartDrawer: React.FC = () => {
                   <ArrowRight className="w-4 h-4" />
                 </button>
 
-                <button
-                  type="button"
-                  onClick={handleWhatsAppQuickCartOrder}
-                  className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-sm transition-all"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  <span>Order Directly via WhatsApp</span>
-                </button>
               </div>
 
               <div className="flex items-center justify-between pt-1">

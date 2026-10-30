@@ -3,15 +3,7 @@ import { Link } from 'react-router-dom';
 import type { OrderDetails } from '../types';
 import { formatCurrency } from '../utils/formatters';
 import {
-  createOrderWhatsAppMessage,
-  generateWhatsAppLink,
-  STORE_PHONE_NUMBER,
-} from '../utils/whatsapp';
-import {
   CheckCircle2,
-  MessageCircle,
-  Copy,
-  Check,
   ShoppingBag,
   MapPin,
   Phone,
@@ -21,7 +13,6 @@ import {
 
 export const OrderSuccessPage: React.FC = () => {
   const [orderDetails, setOrderDetails] = useState<OrderDetails | null>(null);
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     try {
@@ -40,18 +31,6 @@ export const OrderSuccessPage: React.FC = () => {
   const subtotal = orderDetails?.subtotal || 0;
   const deliveryFee = orderDetails?.deliveryFee || 0;
   const total = orderDetails?.total || 0;
-
-  const prefilledMessage = customer
-    ? createOrderWhatsAppMessage(orderId, customer, items, subtotal, deliveryFee, total)
-    : `🌿 Hello NJ Essentials! I placed order ref: ${orderId}. Please confirm dispatch details.`;
-
-  const whatsappUrl = generateWhatsAppLink(prefilledMessage, STORE_PHONE_NUMBER);
-
-  const handleCopyMessage = () => {
-    navigator.clipboard.writeText(prefilledMessage);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12">
@@ -74,38 +53,6 @@ export const OrderSuccessPage: React.FC = () => {
           <strong className="text-forest-900 font-mono">{orderId}</strong>
         </p>
 
-        {/* WhatsApp Direct Action Banner */}
-        <div className="max-w-md mx-auto p-4 rounded-2xl bg-emerald-50 border border-emerald-200 mb-6 text-left">
-          <div className="flex items-center gap-3 mb-2">
-            <MessageCircle className="w-6 h-6 text-emerald-600 fill-emerald-600 shrink-0" />
-            <div>
-              <h3 className="font-serif font-bold text-sm text-emerald-950">
-                Confirm Fast Dispatch on WhatsApp
-              </h3>
-              <p className="text-xs text-emerald-700">
-                Click below to send your prefilled order summary directly to our desk.
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2 mt-3">
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 py-2.5 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold text-center transition-all shadow-sm flex items-center justify-center gap-2"
-            >
-              <MessageCircle className="w-4 h-4 fill-white" />
-              <span>Open in WhatsApp</span>
-            </a>
-            <button
-              onClick={handleCopyMessage}
-              className="px-3.5 py-2.5 bg-white border border-emerald-300 text-emerald-800 rounded-xl text-xs font-semibold hover:bg-emerald-100 transition-colors flex items-center gap-1.5"
-            >
-              {copied ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4" />}
-              <span>{copied ? 'Copied' : 'Copy'}</span>
-            </button>
-          </div>
-        </div>
 
         <div className="text-xs text-slate-500">
           Our team dispatches orders within 24 hours. You will receive tracking notifications via WhatsApp.
