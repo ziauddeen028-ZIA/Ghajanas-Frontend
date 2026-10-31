@@ -27,6 +27,7 @@ export interface Product {
   isOrganic?: boolean;
   badge?: string;
   nutritionHighlights?: { [key: string]: string };
+  isActive?: boolean;
 }
 
 export interface Category {
@@ -39,6 +40,8 @@ export interface Category {
   iconName: string;
   itemCount: number;
   isPopular?: boolean;
+  isActive?: boolean;
+  displayOrder?: number;
 }
 
 export interface CartItem {
