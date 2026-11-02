@@ -62,14 +62,14 @@ export const Navbar: React.FC = () => {
     { label: 'Home', path: '/' },
     { label: 'All Essentials', path: '/products' },
     { label: 'Naatu Sakkarai', path: '/products?category=sweeteners' },
-    { label: 'Traditional Rice', path: '/products?category=heritage-rice' },
+    { label: 'Traditional Rice', path: '/products?category=traditional-rice' },
     { label: 'Millets', path: '/products?category=millets' },
     { label: 'Pure Honey', path: '/products?category=honey' },
-    { label: 'Dates & Nuts', path: '/products?category=dates-dryfruits' },
+    { label: 'Dates & Nuts', path: '/products?category=dates-and-dryfruits' },
   ];
 
   const whatsappDirectUrl = generateWhatsAppLink(
-    '🌿 Hello NJ Essentials! I would like to inquire about your traditional groceries and available stock.'
+    '🌿 Hello Ghajanas! I would like to inquire about your traditional groceries and available stock.'
   );
 
   return (
@@ -124,11 +124,11 @@ export const Navbar: React.FC = () => {
             {/* Logo */}
             <Link to="/" className="flex items-center gap-3 group">
               <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-gradient-to-br from-forest-800 to-forest-950 flex items-center justify-center text-white shadow-md group-hover:scale-105 transition-transform duration-300 border border-forest-700">
-                <span className="font-serif font-black text-xl text-amber-400">NJ</span>
+                <span className="font-serif font-black text-xl text-amber-400">G</span>
               </div>
               <div className="flex flex-col">
                 <span className="font-serif font-extrabold text-xl sm:text-2xl tracking-tight text-forest-950 leading-tight">
-                  NJ Essentials
+                  Ghajanas
                 </span>
                 <span className="text-[10px] sm:text-xs font-semibold tracking-wider text-forest-700 uppercase">
                   Pure • Traditional • Natural

@@ -78,6 +78,7 @@ export interface ProductFilterParams {
   search?: string;
   featured?: boolean;
   all?: boolean;
+  limit?: number;
 }
 
 export const getProducts = async (params?: ProductFilterParams, token?: string | null): Promise<Product[]> => {
@@ -87,6 +88,7 @@ export const getProducts = async (params?: ProductFilterParams, token?: string |
     if (params?.category) query.append('category', params.category);
     if (params?.search) query.append('search', params.search);
     if (params?.featured) query.append('featured', 'true');
+    if (params?.limit) query.append('limit', String(params.limit));
 
     const qs = query.toString();
     const url = `${API_BASE_URL}/products${qs ? `?${qs}` : ''}`;

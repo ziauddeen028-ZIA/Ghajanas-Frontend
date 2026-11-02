@@ -41,7 +41,7 @@ export const CartPage: React.FC = () => {
       )
       .join('\n\n');
 
-    const msg = `🌿 *CART INQUIRY / DIRECT ORDER - NJ ESSENTIALS* 🌿\n\nHello! I would like to order the following traditional items:\n\n${itemLines}\n\n-------------------------\n*Subtotal:* ${formatCurrency(subtotal)}\n*Delivery Fee:* ${deliveryFee === 0 ? 'FREE' : formatCurrency(deliveryFee)}\n*Total Payable:* ${formatCurrency(total)}\n-------------------------\nPlease guide me on delivery time and UPI payment.`;
+    const msg = `🌿 *CART INQUIRY / DIRECT ORDER - GHAJANAS* 🌿\n\nHello! I would like to order the following traditional items:\n\n${itemLines}\n\n-------------------------\n*Subtotal:* ${formatCurrency(subtotal)}\n*Delivery Fee:* ${deliveryFee === 0 ? 'FREE' : formatCurrency(deliveryFee)}\n*Total Payable:* ${formatCurrency(total)}\n-------------------------\nPlease guide me on delivery time and UPI payment.`;
 
     window.open(generateWhatsAppLink(msg, STORE_PHONE_NUMBER), '_blank');
   };

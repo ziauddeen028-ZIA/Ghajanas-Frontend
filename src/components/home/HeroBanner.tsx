@@ -5,7 +5,7 @@ import { generateWhatsAppLink } from '../../utils/whatsapp';
 
 export const HeroBanner: React.FC = () => {
   const whatsappUrl = generateWhatsAppLink(
-    '🌿 Hello NJ Essentials! I want to explore your traditional grocery catalog and order via WhatsApp.'
+    '🌿 Hello Ghajanas! I want to explore your traditional grocery catalog and order via WhatsApp.'
   );
 
   return (

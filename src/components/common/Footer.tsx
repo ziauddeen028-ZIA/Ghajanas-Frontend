@@ -14,7 +14,7 @@ import {
 import { STORE_PHONE_NUMBER, generateWhatsAppLink } from '../../utils/whatsapp';
 
 export const Footer: React.FC = () => {
-  const whatsappUrl = generateWhatsAppLink('🌿 Hello NJ Essentials! I would like to get more information about your products.');
+  const whatsappUrl = generateWhatsAppLink('🌿 Hello Ghajanas! I would like to get more information about your products.');
 
   return (
     <footer className="bg-forest-950 text-cream-200 pt-16 pb-8 border-t-4 border-amber-500">
@@ -69,11 +69,11 @@ export const Footer: React.FC = () => {
         <div className="lg:col-span-2 space-y-4">
           <Link to="/" className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-amber-500 text-forest-950 font-serif font-black text-xl flex items-center justify-center shadow-md">
-              NJ
+              G
             </div>
             <div className="flex flex-col">
               <span className="font-serif font-bold text-2xl text-white tracking-tight">
-                NJ Essentials
+                Ghajanas
               </span>
               <span className="text-xs font-semibold tracking-wider text-amber-400 uppercase">
                 Pure • Traditional • Natural
@@ -113,7 +113,7 @@ export const Footer: React.FC = () => {
               </Link>
             </li>
             <li>
-              <Link to="/products?category=heritage-rice" className="hover:text-amber-400 transition-colors">
+              <Link to="/products?category=traditional-rice" className="hover:text-amber-400 transition-colors">
                 Traditional Heritage Rice
               </Link>
             </li>
@@ -128,12 +128,12 @@ export const Footer: React.FC = () => {
               </Link>
             </li>
             <li>
-              <Link to="/products?category=dates-dryfruits" className="hover:text-amber-400 transition-colors">
+              <Link to="/products?category=dates-and-dryfruits" className="hover:text-amber-400 transition-colors">
                 Medjool Dates & Dry Fruits
               </Link>
             </li>
             <li>
-              <Link to="/products?category=nuts-seeds" className="hover:text-amber-400 transition-colors">
+              <Link to="/products?category=nuts-and-seeds" className="hover:text-amber-400 transition-colors">
                 Cashews, Almonds & Seeds
               </Link>
             </li>
@@ -167,7 +167,7 @@ export const Footer: React.FC = () => {
               </a>
             </li>
             <li>
-              <a href="#about-nj" className="hover:text-amber-400 transition-colors">
+              <a href="#about-ghajanas" className="hover:text-amber-400 transition-colors">
                 About Our Farmers
               </a>
             </li>
@@ -194,8 +194,8 @@ export const Footer: React.FC = () => {
             </div>
             <div className="flex items-center gap-2.5">
               <Mail className="w-4 h-4 text-amber-400 shrink-0" />
-              <a href="mailto:orders@njessentials.in" className="hover:text-white">
-                orders@njessentials.in
+              <a href="mailto:orders@ghajanas.in" className="hover:text-white">
+                orders@ghajanas.in
               </a>
             </div>
             <div className="flex items-center gap-2.5">
@@ -208,7 +208,7 @@ export const Footer: React.FC = () => {
 
       {/* Copyright Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-cream-400">
-        <p>© {new Date().getFullYear()} NJ Essentials. All rights reserved. Handcrafted with care.</p>
+        <p>© {new Date().getFullYear()} Ghajanas. All rights reserved. Handcrafted with care.</p>
         <div className="flex items-center gap-4 text-xs">
           <span>100% Traditional Groceries</span>
           <span>•</span>

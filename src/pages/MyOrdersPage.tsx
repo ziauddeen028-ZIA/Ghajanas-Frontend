@@ -49,19 +49,8 @@ export const MyOrdersPage: React.FC = () => {
       const data = await res.json();
       setOrders(data.orders || []);
     } catch (err: any) {
-      console.warn('Orders API error, checking fallback local order:', err);
-      // Fallback: Check if there is an order stored from current session
-      try {
-        const stored = sessionStorage.getItem('nj_last_order');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          setOrders([parsed]);
-        } else {
-          setError(err.message || 'Unable to retrieve your orders.');
-        }
-      } catch {
-        setError(err.message || 'Unable to retrieve your orders.');
-      }
+      console.error('Failed to load orders from database:', err);
+      setError(err.message || 'Unable to retrieve your orders from the database.');
     } finally {
       setIsLoading(false);
     }

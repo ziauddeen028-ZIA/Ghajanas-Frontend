@@ -1,18 +1,45 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { products } from '../data/products';
-import { categories } from '../data/categories';
+import type { Product, Category } from '../types';
+import { getProducts, getCategories } from '../services/catalogApi';
 import { ProductGrid } from '../components/product/ProductGrid';
-import { Search, SlidersHorizontal, X, Sparkles } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
 
 export const ProductsPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialCategory = searchParams.get('category') || 'all';
   const initialSearch = searchParams.get('search') || '';
 
+  const [products, setProducts] = useState<Product[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
   const [selectedCategory, setSelectedCategory] = useState<string>(initialCategory);
   const [searchQuery, setSearchQuery] = useState<string>(initialSearch);
   const [sortBy, setSortBy] = useState<string>('featured');
+
+  const loadCatalogData = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [prodsData, catsData] = await Promise.all([
+        getProducts(),
+        getCategories(),
+      ]);
+      setProducts(prodsData);
+      setCategories(catsData);
+    } catch (err: any) {
+      console.error('Failed to load catalog data:', err);
+      setError(err.message || 'Unable to connect to product catalog. Please retry.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadCatalogData();
+  }, [loadCatalogData]);
 
   // Sync state if URL search params change
   useEffect(() => {
@@ -22,13 +49,13 @@ export const ProductsPage: React.FC = () => {
     setSearchQuery(q);
   }, [searchParams]);
 
-  const handleCategoryChange = (catId: string) => {
-    setSelectedCategory(catId);
+  const handleCategoryChange = (catIdentifier: string) => {
+    setSelectedCategory(catIdentifier);
     const newParams = new URLSearchParams(searchParams);
-    if (catId === 'all') {
+    if (catIdentifier === 'all') {
       newParams.delete('category');
     } else {
-      newParams.set('category', catId);
+      newParams.set('category', catIdentifier);
     }
     setSearchParams(newParams);
   };
@@ -51,22 +78,36 @@ export const ProductsPage: React.FC = () => {
     setSearchParams({});
   };
 
+  // Find active category by either id or slug
+  const currentCategoryData = useMemo(() => {
+    if (selectedCategory === 'all') return undefined;
+    return categories.find(
+      (c) => c.id === selectedCategory || c.slug === selectedCategory
+    );
+  }, [categories, selectedCategory]);
+
   const filteredProducts = useMemo(() => {
     return products
       .filter((product) => {
-        // Category filter
+        // Category filter: match either raw selectedCategory or currentCategoryData's id/slug
         const matchesCategory =
-          selectedCategory === 'all' || product.categoryId === selectedCategory;
+          selectedCategory === 'all' ||
+          product.categoryId === selectedCategory ||
+          product.categorySlug === selectedCategory ||
+          (currentCategoryData &&
+            (product.categoryId === currentCategoryData.id ||
+              product.categorySlug === currentCategoryData.slug));
 
-        // Search query filter (matches name, tamilName, category, or description)
+        // Search query filter (matches name, tamilName, category, description, origin)
         const q = searchQuery.toLowerCase().trim();
         const matchesSearch =
           !q ||
           product.name.toLowerCase().includes(q) ||
           (product.tamilName && product.tamilName.toLowerCase().includes(q)) ||
           product.categoryName.toLowerCase().includes(q) ||
-          product.shortDescription.toLowerCase().includes(q) ||
-          product.origin.toLowerCase().includes(q);
+          (product.shortDescription && product.shortDescription.toLowerCase().includes(q)) ||
+          (product.description && product.description.toLowerCase().includes(q)) ||
+          (product.origin && product.origin.toLowerCase().includes(q));
 
         return matchesCategory && matchesSearch;
       })
@@ -76,13 +117,11 @@ export const ProductsPage: React.FC = () => {
 
         if (sortBy === 'price-low') return priceA - priceB;
         if (sortBy === 'price-high') return priceB - priceA;
-        if (sortBy === 'rating') return b.rating - a.rating;
+        if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
         // Default: featured first
         return (b.isFeatured ? 1 : 0) - (a.isFeatured ? 1 : 0);
       });
-  }, [selectedCategory, searchQuery, sortBy]);
-
-  const currentCategoryData = categories.find((c) => c.id === selectedCategory);
+  }, [products, selectedCategory, currentCategoryData, searchQuery, sortBy]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -164,12 +203,13 @@ export const ProductsPage: React.FC = () => {
               All Essentials ({products.length})
             </button>
             {categories.map((cat) => {
-              const isSelected = selectedCategory === cat.id;
+              const isSelected =
+                selectedCategory === cat.id || selectedCategory === cat.slug;
               return (
                 <button
                   key={cat.id}
-                  onClick={() => handleCategoryChange(cat.id)}
-                  className={`px-3 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all ${
+                  onClick={() => handleCategoryChange(cat.slug || cat.id)}
+                  className={`px-3.5 py-1.5 rounded-xl font-bold whitespace-nowrap transition-all ${
                     isSelected
                       ? 'bg-forest-900 text-white shadow-sm'
                       : 'bg-cream-100 hover:bg-cream-200 text-slate-700 border border-cream-300'
@@ -183,27 +223,49 @@ export const ProductsPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Status & Count */}
-      <div className="flex items-center justify-between text-xs text-slate-500 mb-4 px-1">
-        <p>
-          Showing <strong className="text-slate-900">{filteredProducts.length}</strong> authentic products
-        </p>
-
-        {(selectedCategory !== 'all' || searchQuery) && (
+      {/* Error State Banner */}
+      {error && (
+        <div className="p-6 my-6 text-center bg-rose-50 rounded-2xl border border-rose-200 text-rose-800">
+          <AlertCircle className="w-8 h-8 text-rose-500 mx-auto mb-2" />
+          <p className="text-sm font-semibold mb-3">{error}</p>
           <button
-            onClick={handleClearFilters}
-            className="text-forest-700 hover:text-forest-900 font-bold flex items-center gap-1"
+            onClick={loadCatalogData}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-colors shadow-sm"
           >
-            <X className="w-3.5 h-3.5" />
-            Reset Filters
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Retry Loading</span>
           </button>
-        )}
-      </div>
+        </div>
+      )}
+
+      {/* Filter Status & Count */}
+      {!isLoading && !error && (
+        <div className="flex items-center justify-between text-xs text-slate-500 mb-4 px-1">
+          <p>
+            Showing <strong className="text-slate-900">{filteredProducts.length}</strong> authentic products
+          </p>
+
+          {(selectedCategory !== 'all' || searchQuery) && (
+            <button
+              onClick={handleClearFilters}
+              className="text-forest-700 hover:text-forest-900 font-bold flex items-center gap-1"
+            >
+              <X className="w-3.5 h-3.5" />
+              Reset Filters
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Product Grid */}
       <ProductGrid
         products={filteredProducts}
-        emptyMessage={`No products found matching "${searchQuery}". Try searching for Naatu Sakkarai, Mappillai Samba, Honey, or Almonds.`}
+        isLoading={isLoading}
+        emptyMessage={
+          searchQuery
+            ? `No products found matching "${searchQuery}". Try searching for Naatu Sakkarai, Mappillai Samba, Honey, or Almonds.`
+            : `No products available in this category yet. Please check back soon.`
+        }
       />
     </div>
   );

@@ -1,7 +1,7 @@
 import type { CartItem, CheckoutFormData, Product, WeightOption } from '../types';
 import { formatCurrency } from './formatters';
 
-export const STORE_PHONE_NUMBER = '916382240715'; // NJ Essentials Customer Care / Order Desk
+export const STORE_PHONE_NUMBER = '916382240715'; // Ghajanas Customer Care / Order Desk
 
 /**
  * Creates a prefilled WhatsApp order message for the complete checkout order.
@@ -42,7 +42,7 @@ export const createOrderWhatsAppMessage = (
       ? 'Cash on Delivery (COD)'
       : 'Online UPI';
 
-  return `🌿 *NEW ORDER - NJ ESSENTIALS* 🌿\n---------------------------------\n*Order Ref:* ${orderId}\n\n*Customer & Delivery Address:*\n${address}\n\n*Ordered Items:*\n${itemLines}\n\n---------------------------------\n*Items Subtotal:* ${formatCurrency(subtotal)}\n*Delivery Fee:* ${deliveryText}\n*TOTAL PAYABLE:* ${formatCurrency(total)}\n*Payment Preference:* ${paymentText}\n---------------------------------\nPlease confirm my order and share estimated dispatch details. Thank you!`;
+  return `🌿 *NEW ORDER - GHAJANAS* 🌿\n---------------------------------\n*Order Ref:* ${orderId}\n\n*Customer & Delivery Address:*\n${address}\n\n*Ordered Items:*\n${itemLines}\n\n---------------------------------\n*Items Subtotal:* ${formatCurrency(subtotal)}\n*Delivery Fee:* ${deliveryText}\n*TOTAL PAYABLE:* ${formatCurrency(total)}\n*Payment Preference:* ${paymentText}\n---------------------------------\nPlease confirm my order and share estimated dispatch details. Thank you!`;
 };
 
 /**
@@ -62,5 +62,5 @@ export const createSingleProductWhatsAppMessage = (
   quantity: number = 1
 ): string => {
   const total = selectedWeight.price * quantity;
-  return `🌿 *NJ ESSENTIALS QUICK ORDER* 🌿\n\nI want to order:\n*Product:* ${product.name}\n*Variant:* ${selectedWeight.label}\n*Quantity:* ${quantity}\n*Estimated Price:* ${formatCurrency(total)}\n\nPlease let me know availability and delivery to my address.`;
+  return `🌿 *GHAJANAS QUICK ORDER* 🌿\n\nI want to order:\n*Product:* ${product.name}\n*Variant:* ${selectedWeight.label}\n*Quantity:* ${quantity}\n*Estimated Price:* ${formatCurrency(total)}\n\nPlease let me know availability and delivery to my address.`;
 };

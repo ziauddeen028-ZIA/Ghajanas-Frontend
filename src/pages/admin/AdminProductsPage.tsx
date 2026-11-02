@@ -519,137 +519,234 @@ export const AdminProductsPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Products Table */}
+            {/* Products List */}
             <div className="bg-white rounded-2xl border border-cream-200 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-cream-100 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-cream-200">
-                    <tr>
-                      <th className="py-3 px-4">Product Details</th>
-                      <th className="py-3 px-4">Category</th>
-                      <th className="py-3 px-4">Weight Variants / Stock</th>
-                      <th className="py-3 px-4">Status & Flags</th>
-                      <th className="py-3 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-cream-100">
-                    {isLoading ? (
-                      <tr>
-                        <td colSpan={5} className="py-12 text-center text-slate-400">
-                          <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-forest-700" />
-                          <span>Loading products from database...</span>
-                        </td>
-                      </tr>
-                    ) : filteredProducts.length === 0 ? (
-                      <tr>
-                        <td colSpan={5} className="py-12 text-center text-slate-400">
-                          <p className="font-semibold text-slate-600">No products match the selected filters.</p>
-                          <p className="text-[11px] mt-1">Try resetting the search terms or create a new product above.</p>
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredProducts.map((p) => (
-                        <tr key={p.id} className="hover:bg-cream-50/60 transition-colors">
-                          <td className="py-3.5 px-4">
-                            <div className="flex items-center gap-3">
-                              <div className="relative shrink-0">
-                                <img
-                                  src={p.images[0] || 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80'}
-                                  alt={p.name}
-                                  className="w-12 h-12 rounded-xl object-cover bg-cream-100 border border-cream-200 shadow-2xs"
-                                />
-                                {p.images.length > 1 && (
-                                  <span className="absolute -bottom-1 -right-1 bg-forest-900 text-white text-[9px] font-bold px-1 rounded-full">
-                                    +{p.images.length - 1}
-                                  </span>
-                                )}
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-bold text-slate-900 truncate max-w-xs">{p.name}</p>
-                                {p.tamilName && (
-                                  <p className="text-[11px] text-emerald-800 font-medium">{p.tamilName}</p>
-                                )}
-                                <p className="text-[10px] text-slate-400 mt-0.5">{p.origin}</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-4 font-semibold text-slate-700">
-                            <span className="px-2.5 py-1 rounded-lg bg-cream-100 text-slate-700 text-[11px] border border-cream-200">
-                              {p.categoryName || 'Uncategorized'}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <div className="flex flex-wrap gap-1.5 max-w-xs">
-                              {p.weightOptions.map((opt) => (
-                                <span
-                                  key={opt.id}
-                                  className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                                    opt.inStock
-                                      ? 'bg-cream-100 text-slate-800 border-cream-200'
-                                      : 'bg-rose-50 text-rose-700 border-rose-200 line-through'
-                                  }`}
-                                >
-                                  {opt.label}: {formatCurrency(opt.price)}{' '}
-                                  <span className="text-[9px] text-slate-400">({opt.stockCount ?? 0} in stock)</span>
-                                </span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <div className="flex flex-col gap-1 items-start">
-                              <button
-                                type="button"
-                                onClick={() => handleToggleStatus(p, 'isActive')}
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all ${
-                                  p.isActive !== false
-                                    ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                                    : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
-                                }`}
-                                title="Click to toggle active status"
-                              >
-                                {p.isActive !== false ? <Check className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />}
-                                <span>{p.isActive !== false ? 'Active' : 'Inactive'}</span>
-                              </button>
-
-                              <button
-                                type="button"
-                                onClick={() => handleToggleStatus(p, 'isFeatured')}
-                                className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all ${
-                                  p.isFeatured
-                                    ? 'bg-amber-100 text-amber-900 hover:bg-amber-200'
-                                    : 'bg-cream-100 text-slate-400 hover:bg-cream-200'
-                                }`}
-                                title="Click to toggle featured status"
-                              >
-                                <Star className={`w-2.5 h-2.5 ${p.isFeatured ? 'fill-amber-500 text-amber-500' : ''}`} />
-                                <span>{p.isFeatured ? 'Featured' : 'Regular'}</span>
-                              </button>
-                            </div>
-                          </td>
-                          <td className="py-3.5 px-4 text-right">
-                            <div className="flex items-center justify-end gap-1.5">
-                              <button
-                                onClick={() => handleOpenProductModal(p)}
-                                className="p-2 rounded-lg bg-cream-100 hover:bg-forest-100 text-forest-800 transition-colors"
-                                title="Edit Product"
-                              >
-                                <Edit2 className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => setDeletingProductId(p.id)}
-                                className="p-2 rounded-lg bg-cream-100 hover:bg-rose-100 text-rose-700 transition-colors"
-                                title="Delete Product"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
+              {isLoading ? (
+                <div className="py-12 text-center text-slate-400">
+                  <RefreshCw className="w-6 h-6 animate-spin mx-auto mb-2 text-forest-700" />
+                  <span className="text-xs">Loading products from database...</span>
+                </div>
+              ) : filteredProducts.length === 0 ? (
+                <div className="py-12 text-center text-slate-400">
+                  <p className="font-semibold text-slate-600 text-xs">No products match the selected filters.</p>
+                  <p className="text-[11px] mt-1">Try resetting the search terms or create a new product above.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Desktop Table — hidden on mobile */}
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-cream-100 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-cream-200">
+                        <tr>
+                          <th className="py-3 px-4">Product Details</th>
+                          <th className="py-3 px-4">Category</th>
+                          <th className="py-3 px-4">Weight Variants / Stock</th>
+                          <th className="py-3 px-4">Status & Flags</th>
+                          <th className="py-3 px-4 text-right">Actions</th>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                      </thead>
+                      <tbody className="divide-y divide-cream-100">
+                        {filteredProducts.map((p) => (
+                          <tr key={p.id} className="hover:bg-cream-50/60 transition-colors">
+                            <td className="py-3.5 px-4">
+                              <div className="flex items-center gap-3">
+                                <div className="relative shrink-0">
+                                  <img
+                                    src={p.images[0] || 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80'}
+                                    alt={p.name}
+                                    className="w-12 h-12 rounded-xl object-cover bg-cream-100 border border-cream-200 shadow-2xs"
+                                  />
+                                  {p.images.length > 1 && (
+                                    <span className="absolute -bottom-1 -right-1 bg-forest-900 text-white text-[9px] font-bold px-1 rounded-full">
+                                      +{p.images.length - 1}
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="min-w-0">
+                                  <p className="font-bold text-slate-900 truncate max-w-xs">{p.name}</p>
+                                  {p.tamilName && (
+                                    <p className="text-[11px] text-emerald-800 font-medium">{p.tamilName}</p>
+                                  )}
+                                  <p className="text-[10px] text-slate-400 mt-0.5">{p.origin}</p>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4 font-semibold text-slate-700">
+                              <span className="px-2.5 py-1 rounded-lg bg-cream-100 text-slate-700 text-[11px] border border-cream-200">
+                                {p.categoryName || 'Uncategorized'}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="flex flex-wrap gap-1.5 max-w-xs">
+                                {p.weightOptions.map((opt) => (
+                                  <span
+                                    key={opt.id}
+                                    className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                                      opt.inStock
+                                        ? 'bg-cream-100 text-slate-800 border-cream-200'
+                                        : 'bg-rose-50 text-rose-700 border-rose-200 line-through'
+                                    }`}
+                                  >
+                                    {opt.label}: {formatCurrency(opt.price)}{' '}
+                                    <span className="text-[9px] text-slate-400">({opt.stockCount ?? 0} in stock)</span>
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4">
+                              <div className="flex flex-col gap-1 items-start">
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleStatus(p, 'isActive')}
+                                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all ${
+                                    p.isActive !== false
+                                      ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                      : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                                  }`}
+                                  title="Click to toggle active status"
+                                >
+                                  {p.isActive !== false ? <Check className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />}
+                                  <span>{p.isActive !== false ? 'Active' : 'Inactive'}</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleToggleStatus(p, 'isFeatured')}
+                                  className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold transition-all ${
+                                    p.isFeatured
+                                      ? 'bg-amber-100 text-amber-900 hover:bg-amber-200'
+                                      : 'bg-cream-100 text-slate-400 hover:bg-cream-200'
+                                  }`}
+                                  title="Click to toggle featured status"
+                                >
+                                  <Star className={`w-2.5 h-2.5 ${p.isFeatured ? 'fill-amber-500 text-amber-500' : ''}`} />
+                                  <span>{p.isFeatured ? 'Featured' : 'Regular'}</span>
+                                </button>
+                              </div>
+                            </td>
+                            <td className="py-3.5 px-4 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleOpenProductModal(p)}
+                                  className="p-2 rounded-lg bg-cream-100 hover:bg-forest-100 text-forest-800 transition-colors"
+                                  title="Edit Product"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  onClick={() => setDeletingProductId(p.id)}
+                                  className="p-2 rounded-lg bg-cream-100 hover:bg-rose-100 text-rose-700 transition-colors"
+                                  title="Delete Product"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Cards — shown only on mobile */}
+                  <div className="md:hidden divide-y divide-cream-100">
+                    {filteredProducts.map((p) => (
+                      <div key={p.id} className="p-4 space-y-3">
+                        {/* Product header */}
+                        <div className="flex items-start gap-3">
+                          <div className="relative shrink-0">
+                            <img
+                              src={p.images[0] || 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80'}
+                              alt={p.name}
+                              className="w-14 h-14 rounded-xl object-cover bg-cream-100 border border-cream-200"
+                            />
+                            {p.images.length > 1 && (
+                              <span className="absolute -bottom-1 -right-1 bg-forest-900 text-white text-[9px] font-bold px-1 rounded-full">
+                                +{p.images.length - 1}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-bold text-slate-900 text-sm leading-tight">{p.name}</p>
+                            {p.tamilName && (
+                              <p className="text-[11px] text-emerald-800 font-medium">{p.tamilName}</p>
+                            )}
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="px-2 py-0.5 rounded-lg bg-cream-100 text-slate-600 text-[10px] border border-cream-200">
+                                {p.categoryName || 'Uncategorized'}
+                              </span>
+                              <span className="text-[10px] text-slate-400">{p.origin}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Variants */}
+                        <div className="flex flex-wrap gap-1.5">
+                          {p.weightOptions.map((opt) => (
+                            <span
+                              key={opt.id}
+                              className={`px-2 py-0.5 rounded text-[10px] font-semibold border ${
+                                opt.inStock
+                                  ? 'bg-cream-100 text-slate-800 border-cream-200'
+                                  : 'bg-rose-50 text-rose-700 border-rose-200 line-through'
+                              }`}
+                            >
+                              {opt.label}: {formatCurrency(opt.price)}{' '}
+                              <span className="text-[9px] text-slate-400">({opt.stockCount ?? 0})</span>
+                            </span>
+                          ))}
+                        </div>
+
+                        {/* Status & Actions row */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(p, 'isActive')}
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${
+                                p.isActive !== false
+                                  ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                  : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+                              }`}
+                            >
+                              {p.isActive !== false ? <Check className="w-2.5 h-2.5" /> : <X className="w-2.5 h-2.5" />}
+                              <span>{p.isActive !== false ? 'Active' : 'Off'}</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleStatus(p, 'isFeatured')}
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition-all ${
+                                p.isFeatured
+                                  ? 'bg-amber-100 text-amber-900 hover:bg-amber-200'
+                                  : 'bg-cream-100 text-slate-400 hover:bg-cream-200'
+                              }`}
+                            >
+                              <Star className={`w-2.5 h-2.5 ${p.isFeatured ? 'fill-amber-500 text-amber-500' : ''}`} />
+                              <span>{p.isFeatured ? 'Featured' : 'Regular'}</span>
+                            </button>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() => handleOpenProductModal(p)}
+                              className="p-2 rounded-lg bg-cream-100 hover:bg-forest-100 text-forest-800 transition-colors"
+                              title="Edit Product"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeletingProductId(p.id)}
+                              className="p-2 rounded-lg bg-cream-100 hover:bg-rose-100 text-rose-700 transition-colors"
+                              title="Delete Product"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

@@ -29,10 +29,10 @@ export const WhyChooseUs: React.FC = () => {
     <section className="my-16 bg-cream-50 rounded-3xl p-8 sm:p-12 border border-cream-200">
       <div className="text-center max-w-2xl mx-auto mb-10">
         <span className="text-xs font-bold uppercase tracking-wider text-forest-800 bg-forest-100 px-3 py-1 rounded-full">
-          The NJ Essentials Difference
+          The Ghajanas Difference
         </span>
         <h2 className="font-serif font-extrabold text-2xl sm:text-3xl text-forest-950 mt-3 mb-2">
-          Why Families Trust NJ Essentials
+          Why Families Trust Ghajanas
         </h2>
         <p className="text-sm text-slate-600">
           We bring the purity of our grandmothers’ kitchens back to your modern dining table.

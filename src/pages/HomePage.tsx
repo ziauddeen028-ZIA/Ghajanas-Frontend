@@ -1,21 +1,56 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { HeroBanner } from '../components/home/HeroBanner';
 import { CategoryGrid } from '../components/home/CategoryGrid';
 import { WhyChooseUs } from '../components/home/WhyChooseUs';
 import { ProductGrid } from '../components/product/ProductGrid';
-import { products } from '../data/products';
+import type { Product } from '../types';
+import { getProducts } from '../services/catalogApi';
 import { Link } from 'react-router-dom';
-import { MessageCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { MessageCircle, ArrowRight, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
 import { generateWhatsAppLink } from '../utils/whatsapp';
 
 export const HomePage: React.FC = () => {
+  const [products, setProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProducts = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await getProducts();
+      setProducts(data);
+    } catch (err: any) {
+      console.error('Failed to load products for homepage:', err);
+      setError(err.message || 'Unable to load products. Please check your connection.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+
   const featuredProducts = products.filter((p) => p.isFeatured).slice(0, 8);
-  const riceAndMillets = products.filter(
-    (p) => p.categoryId === 'heritage-rice' || p.categoryId === 'millets'
-  );
+  const fallbackFeatured = featuredProducts.length > 0 ? featuredProducts : products.slice(0, 8);
+
+  const riceAndMillets = products.filter((p) => {
+    const slug = (p.categorySlug || '').toLowerCase();
+    const name = (p.categoryName || '').toLowerCase();
+    const catId = (p.categoryId || '').toLowerCase();
+    return (
+      slug.includes('rice') ||
+      slug.includes('millet') ||
+      name.includes('rice') ||
+      name.includes('millet') ||
+      catId.includes('rice') ||
+      catId.includes('millet')
+    );
+  });
 
   const whatsappBannerUrl = generateWhatsAppLink(
-    '🌿 Hello NJ Essentials! I am browsing your store and would like assistance with ordering traditional groceries.'
+    '🌿 Hello Ghajanas! I am browsing your store and would like assistance with ordering traditional groceries.'
   );
 
   return (
@@ -26,22 +61,40 @@ export const HomePage: React.FC = () => {
       {/* Explore Categories */}
       <CategoryGrid />
 
+      {/* Error state if products fail to load */}
+      {error && (
+        <div className="p-6 my-8 text-center bg-rose-50 rounded-2xl border border-rose-200 text-rose-800">
+          <AlertCircle className="w-8 h-8 text-rose-500 mx-auto mb-2" />
+          <p className="text-sm font-semibold mb-3">{error}</p>
+          <button
+            onClick={fetchProducts}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold hover:bg-rose-700 transition-colors shadow-sm"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Try Again</span>
+          </button>
+        </div>
+      )}
+
       {/* Featured Products */}
       <section className="my-14">
         <ProductGrid
-          products={featuredProducts}
+          products={fallbackFeatured}
+          isLoading={isLoading}
           title="Featured Traditional Essentials"
           subtitle="Our most loved heirloom rice, country sugar, raw honey, and royal dates"
         />
-        <div className="text-center mt-8">
-          <Link
-            to="/products"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-forest-900 hover:bg-forest-950 text-white font-bold text-sm shadow-md transition-all group"
-          >
-            <span>Explore All {products.length} Products</span>
-            <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-          </Link>
-        </div>
+        {!isLoading && products.length > 0 && (
+          <div className="text-center mt-8">
+            <Link
+              to="/products"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-forest-900 hover:bg-forest-950 text-white font-bold text-sm shadow-md transition-all group"
+            >
+              <span>Explore All {products.length} Products</span>
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+        )}
       </section>
 
       {/* WhatsApp Fast Ordering Banner */}
@@ -73,13 +126,16 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* Heritage Rice & Millets Showcase */}
-      <section className="my-14">
-        <ProductGrid
-          products={riceAndMillets.slice(0, 4)}
-          title="Heritage Rice & Nutrient Millets"
-          subtitle="Grown with native seeds, unpolished, packed with zinc and natural iron"
-        />
-      </section>
+      {(isLoading || riceAndMillets.length > 0) && (
+        <section className="my-14">
+          <ProductGrid
+            products={riceAndMillets.slice(0, 4)}
+            isLoading={isLoading}
+            title="Heritage Rice & Nutrient Millets"
+            subtitle="Grown with native seeds, unpolished, packed with zinc and natural iron"
+          />
+        </section>
+      )}
 
       {/* Why Choose Us Trust Pillars */}
       <WhyChooseUs />

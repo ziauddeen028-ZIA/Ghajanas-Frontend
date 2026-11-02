@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import type { CheckoutFormData, OrderDetails, CartItem } from '../types';
-import { formatCurrency, generateOrderId } from '../utils/formatters';
+import { formatCurrency } from '../utils/formatters';
 import {
   createOrderWhatsAppMessage,
   generateWhatsAppLink,
@@ -25,7 +25,7 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 const OWNER_UPI_ID = import.meta.env.VITE_OWNER_UPI_ID || '916382240715@upi';
-const OWNER_UPI_NAME = import.meta.env.VITE_OWNER_UPI_NAME || 'NJ Essentials / Ghajanas';
+const OWNER_UPI_NAME = import.meta.env.VITE_OWNER_UPI_NAME || 'Ghajanas';
 
 export const CheckoutPage: React.FC = () => {
   const { cart, subtotal, deliveryFee, total, clearCart } = useCart();
@@ -187,82 +187,72 @@ export const CheckoutPage: React.FC = () => {
       deliveryNotes: formData.deliveryNotes,
     };
 
-    let confirmedOrderId = generateOrderId();
-    let savedOrderPayload: OrderDetails = {
-      orderId: confirmedOrderId,
-      items: [...cart],
-      subtotal,
-      deliveryFee,
-      discount: 0,
-      total,
-      customer: { ...formData, ...addressSnapshot },
-      paymentMethod: formData.paymentMethod,
-      paymentStatus: 'Unpaid', // Initial payment status: Unpaid until verified
-      orderStatus: 'Received',
-      createdAt: new Date().toISOString(),
-    };
-
-    // Save order in backend before opening WhatsApp
-    if (token) {
-      try {
-        const res = await fetch(`${API_BASE_URL}/orders`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            items: cart,
-            subtotal,
-            deliveryFee,
-            discount: 0,
-            total,
-            customer: addressSnapshot,
-            paymentMethod: formData.paymentMethod,
-          }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.order) {
-            savedOrderPayload = data.order;
-            confirmedOrderId = data.order.orderId;
-          }
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          console.warn('Backend order recording notice:', errData.error);
-        }
-      } catch (e) {
-        console.warn('Order saved locally (backend unreachable in Phase 1)');
-      }
+    if (!token) {
+      setApiError('You must be logged in to place an order.');
+      setIsSubmitting(false);
+      return;
     }
 
-    // Persist to session storage for the success confirmation screen
     try {
-      sessionStorage.setItem('nj_last_order', JSON.stringify(savedOrderPayload));
-    } catch (e) {
-      console.error(e);
+      // 1. Save order in PostgreSQL database before opening WhatsApp
+      const res = await fetch(`${API_BASE_URL}/orders`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          items: cart,
+          customer: addressSnapshot,
+          paymentMethod: formData.paymentMethod,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setApiError(data.error || 'Failed to place order. Please review item availability and try again.');
+        setIsSubmitting(false);
+        window.scrollTo({ top: 150, behavior: 'smooth' });
+        return;
+      }
+
+      const confirmedOrder: OrderDetails = data.order;
+      const confirmedOrderId = confirmedOrder.orderId || (confirmedOrder as any).orderNumber;
+
+      // 2. Persist confirmed order to session storage for the success confirmation screen
+      try {
+        sessionStorage.setItem('nj_last_order', JSON.stringify(confirmedOrder));
+      } catch (e) {
+        console.error(e);
+      }
+
+      // 3. Prepare WhatsApp Message with the database-confirmed order details
+      const whatsappMessage = createOrderWhatsAppMessage(
+        confirmedOrderId,
+        confirmedOrder.customer,
+        confirmedOrder.items,
+        confirmedOrder.subtotal,
+        confirmedOrder.deliveryFee,
+        confirmedOrder.total
+      );
+
+      // 4. Open WhatsApp if requested
+      if (sendDirectToWhatsApp || formData.paymentMethod === 'whatsapp_order') {
+        const whatsappUrl = generateWhatsAppLink(whatsappMessage, STORE_PHONE_NUMBER);
+        window.open(whatsappUrl, '_blank');
+      }
+
+      // 5. Clear cart and proceed to success page
+      clearCart();
+      setIsSubmitting(false);
+      navigate('/order-success');
+    } catch (e: any) {
+      console.error('Order creation error:', e);
+      setApiError(e.message || 'Unable to connect to order server. Please check your network and retry.');
+      setIsSubmitting(false);
+      window.scrollTo({ top: 150, behavior: 'smooth' });
     }
-
-    // Prepare WhatsApp Message with the confirmed order ID and snapshot details
-    const whatsappMessage = createOrderWhatsAppMessage(
-      confirmedOrderId,
-      savedOrderPayload.customer,
-      cart,
-      subtotal,
-      deliveryFee,
-      total
-    );
-
-    // Open WhatsApp if chosen
-    if (sendDirectToWhatsApp || formData.paymentMethod === 'whatsapp_order') {
-      const whatsappUrl = generateWhatsAppLink(whatsappMessage, STORE_PHONE_NUMBER);
-      window.open(whatsappUrl, '_blank');
-    }
-
-    clearCart();
-    setIsSubmitting(false);
-    navigate('/order-success');
   };
 
   return (

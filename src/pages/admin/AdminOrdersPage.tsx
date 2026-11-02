@@ -84,8 +84,8 @@ export const AdminOrdersPage: React.FC = () => {
 
   return (
     <AdminLayout
-      title="Orders Management (Phase 1)"
-      subtitle="Orders placed in this session are listed below. Admin can manually verify UPI or COD payments."
+      title="Orders Management"
+      subtitle="Live orders from Supabase PostgreSQL. Verify UPI or COD payments, track status, and view customer address snapshots."
     >
       <div className="space-y-6">
         {/* Phase 1 Explanatory Callout */}

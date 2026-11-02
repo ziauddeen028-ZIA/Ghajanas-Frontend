@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { products } from '../data/products';
+import type { Product, WeightOption } from '../types';
+import { getProductById, getProducts } from '../services/catalogApi';
 import { useCart } from '../context/CartContext';
-import type { WeightOption } from '../types';
 import { ProductGrid } from '../components/product/ProductGrid';
 import { formatCurrency, calculateDiscountPercent } from '../utils/formatters';
 import { createSingleProductWhatsAppMessage, generateWhatsAppLink } from '../utils/whatsapp';
@@ -20,6 +20,7 @@ import {
   ArrowLeft,
   ChevronRight,
   PackageCheck,
+  RefreshCw,
 } from 'lucide-react';
 
 export const ProductDetailPage: React.FC = () => {
@@ -28,41 +29,114 @@ export const ProductDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const product = products.find((p) => p.slug === slug);
+  const [product, setProduct] = useState<Product | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!product) {
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [selectedWeight, setSelectedWeight] = useState<WeightOption | null>(null);
+  const [quantity, setQuantity] = useState(1);
+  const [isAddedFeedback, setIsAddedFeedback] = useState(false);
+
+  const loadProductData = useCallback(async () => {
+    if (!slug) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const prod = await getProductById(slug);
+      setProduct(prod);
+      setActiveImageIndex(0);
+      setQuantity(1);
+
+      if (prod.weightOptions && prod.weightOptions.length > 0) {
+        setSelectedWeight(prod.weightOptions[0]);
+      } else {
+        setSelectedWeight({
+          id: 'default',
+          label: 'Standard',
+          price: 100,
+          inStock: true,
+        });
+      }
+
+      // Fetch related products from the same category
+      try {
+        const related = await getProducts({ category: prod.categoryId });
+        setRelatedProducts(related.filter((p) => p.id !== prod.id).slice(0, 4));
+      } catch (relErr) {
+        console.warn('Could not load related products:', relErr);
+      }
+    } catch (err: any) {
+      console.error('Failed to load product detail:', err);
+      setError(err.message || 'Product not found or unavailable');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [slug]);
+
+  useEffect(() => {
+    loadProductData();
+  }, [loadProductData]);
+
+  if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
-        <h2 className="font-serif font-bold text-2xl text-slate-800 mb-2">Product Not Found</h2>
-        <p className="text-sm text-slate-500 mb-6">
-          The traditional essential you are looking for is currently unavailable or has moved.
-        </p>
-        <Link
-          to="/products"
-          className="px-6 py-2.5 bg-forest-900 text-white rounded-xl text-sm font-bold inline-flex items-center gap-2"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Back to All Products
-        </Link>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <RefreshCw className="w-10 h-10 animate-spin text-forest-700 mb-4" />
+          <h2 className="font-serif font-bold text-xl text-slate-800">
+            Loading Fresh Harvest Details...
+          </h2>
+          <p className="text-xs text-slate-500 mt-1">
+            Fetching product specifications from Ghajanas database
+          </p>
+        </div>
       </div>
     );
   }
 
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [selectedWeight, setSelectedWeight] = useState<WeightOption>(
-    product.weightOptions[0] || { id: 'default', label: '1 unit', price: 100, inStock: true }
-  );
-  const [quantity, setQuantity] = useState(1);
-  const [isAddedFeedback, setIsAddedFeedback] = useState(false);
+  if (error || !product) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-20 text-center">
+        <h2 className="font-serif font-bold text-2xl text-slate-800 mb-2">Product Not Found</h2>
+        <p className="text-sm text-slate-500 mb-6">
+          {error || 'The traditional essential you are looking for is currently unavailable or has moved.'}
+        </p>
+        <div className="flex items-center justify-center gap-3">
+          <button
+            onClick={loadProductData}
+            className="px-5 py-2.5 bg-cream-200 hover:bg-cream-300 text-slate-800 rounded-xl text-sm font-bold inline-flex items-center gap-2"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry
+          </button>
+          <Link
+            to="/products"
+            className="px-6 py-2.5 bg-forest-900 text-white rounded-xl text-sm font-bold inline-flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to All Products
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  const currentWeight = selectedWeight || product.weightOptions[0] || {
+    id: 'default',
+    label: 'Standard',
+    price: 100,
+    inStock: true,
+  };
 
   const discountPercent = calculateDiscountPercent(
-    selectedWeight.price,
-    selectedWeight.originalPrice
+    currentWeight.price,
+    currentWeight.originalPrice
   );
 
   const handleAddToCart = () => {
     const currentPath = location.pathname + location.search;
-    const added = addToCart(product, selectedWeight, quantity, currentPath);
+    const added = addToCart(product, currentWeight, quantity, currentPath);
     if (added) {
       setIsAddedFeedback(true);
       setTimeout(() => setIsAddedFeedback(false), 1800);
@@ -73,13 +147,9 @@ export const ProductDetailPage: React.FC = () => {
   };
 
   const handleOrderOnWhatsApp = () => {
-    const msg = createSingleProductWhatsAppMessage(product, selectedWeight, quantity);
+    const msg = createSingleProductWhatsAppMessage(product, currentWeight, quantity);
     window.open(generateWhatsAppLink(msg), '_blank');
   };
-
-  const relatedProducts = products
-    .filter((p) => p.categoryId === product.categoryId && p.id !== product.id)
-    .slice(0, 4);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
@@ -90,7 +160,7 @@ export const ProductDetailPage: React.FC = () => {
         </Link>
         <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
         <Link
-          to={`/products?category=${product.categoryId}`}
+          to={`/products?category=${product.categorySlug || product.categoryId}`}
           className="hover:text-forest-800 transition-colors"
         >
           {product.categoryName}
@@ -105,7 +175,7 @@ export const ProductDetailPage: React.FC = () => {
         <div className="lg:col-span-6 space-y-4">
           <div className="relative aspect-square rounded-2xl overflow-hidden bg-cream-50 border border-cream-200">
             <img
-              src={product.images[activeImageIndex] || product.images[0]}
+              src={product.images[activeImageIndex] || product.images[0] || 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80'}
               alt={product.name}
               className="w-full h-full object-cover object-center"
             />
@@ -124,18 +194,18 @@ export const ProductDetailPage: React.FC = () => {
 
           {/* Thumbnails */}
           {product.images.length > 1 && (
-            <div className="flex gap-3">
+            <div className="flex gap-3 overflow-x-auto pb-1">
               {product.images.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => setActiveImageIndex(idx)}
-                  className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
+                  className={`w-20 h-20 rounded-xl overflow-hidden border-2 transition-all shrink-0 ${
                     activeImageIndex === idx
                       ? 'border-forest-700 shadow-sm'
                       : 'border-cream-200 opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <img src={img} alt={`${product.name} thumbnail`} className="w-full h-full object-cover" />
+                  <img src={img} alt={`${product.name} thumbnail ${idx + 1}`} className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -145,7 +215,7 @@ export const ProductDetailPage: React.FC = () => {
         {/* Product Details & Actions Column */}
         <div className="lg:col-span-6 flex flex-col">
           {/* Category & Origin */}
-          <div className="flex items-center gap-3 text-xs text-slate-500 mb-2">
+          <div className="flex items-center gap-3 text-xs text-slate-500 mb-2 flex-wrap">
             <span className="px-2.5 py-1 bg-forest-100 text-forest-800 rounded-lg font-bold uppercase tracking-wider">
               {product.categoryName}
             </span>
@@ -179,7 +249,7 @@ export const ProductDetailPage: React.FC = () => {
 
           {/* Short Description */}
           <p className="text-sm text-slate-600 leading-relaxed mb-6">
-            {product.shortDescription}
+            {product.shortDescription || product.description}
           </p>
 
           {/* Weight Variant Selector */}
@@ -189,12 +259,12 @@ export const ProductDetailPage: React.FC = () => {
                 Choose Weight / Packaging:
               </label>
               <span className="text-xs text-forest-800 font-semibold">
-                Selected: {selectedWeight.label}
+                Selected: {currentWeight.label}
               </span>
             </div>
             <div className="flex flex-wrap gap-2.5">
               {product.weightOptions.map((opt) => {
-                const isSelected = selectedWeight.id === opt.id;
+                const isSelected = currentWeight.id === opt.id;
                 return (
                   <button
                     key={opt.id}
@@ -218,16 +288,16 @@ export const ProductDetailPage: React.FC = () => {
           {/* Dynamic Price Display */}
           <div className="bg-cream-50 p-4 rounded-2xl border border-cream-200 mb-6 flex items-baseline gap-3">
             <span className="font-serif font-black text-3xl text-forest-950">
-              {formatCurrency(selectedWeight.price * quantity)}
+              {formatCurrency(currentWeight.price * quantity)}
             </span>
-            {selectedWeight.originalPrice && selectedWeight.originalPrice > selectedWeight.price && (
+            {currentWeight.originalPrice && currentWeight.originalPrice > currentWeight.price && (
               <span className="text-sm text-slate-400 line-through">
-                {formatCurrency(selectedWeight.originalPrice * quantity)}
+                {formatCurrency(currentWeight.originalPrice * quantity)}
               </span>
             )}
             <span className="text-xs text-slate-500 ml-auto flex items-center gap-1 font-semibold">
               <PackageCheck className="w-4 h-4 text-emerald-600" />
-              {selectedWeight.inStock ? 'In Stock — Fresh Batch' : 'Out of Stock'}
+              {currentWeight.inStock ? 'In Stock — Fresh Batch' : 'Out of Stock'}
             </span>
           </div>
 
@@ -260,8 +330,8 @@ export const ProductDetailPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleAddToCart}
-                disabled={!selectedWeight.inStock}
-                className="py-3.5 px-6 rounded-xl font-bold text-sm bg-forest-900 hover:bg-forest-950 text-white flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
+                disabled={!currentWeight.inStock}
+                className="py-3.5 px-6 rounded-xl font-bold text-sm bg-forest-900 hover:bg-forest-950 text-white flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-50"
               >
                 {isAddedFeedback ? (
                   <>
@@ -311,28 +381,29 @@ export const ProductDetailPage: React.FC = () => {
           About this Traditional Product
         </h3>
         <p className="text-sm text-slate-600 leading-relaxed mb-6">
-          {product.description}
+          {product.description || product.shortDescription}
         </p>
 
-        {/* Health Benefits List */}
+        {/* Health Benefits List & Nutrition Highlights */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div className="p-5 rounded-2xl bg-cream-50 border border-cream-200">
-            <h4 className="font-serif font-bold text-base text-forest-900 mb-3 flex items-center gap-2">
-              <ShieldCheck className="w-5 h-5 text-emerald-600" />
-              Key Health Benefits
-            </h4>
-            <ul className="space-y-2 text-xs sm:text-sm text-slate-600">
-              {product.benefits.map((b, idx) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span>{b}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+          {product.benefits && product.benefits.length > 0 && (
+            <div className="p-5 rounded-2xl bg-cream-50 border border-cream-200">
+              <h4 className="font-serif font-bold text-base text-forest-900 mb-3 flex items-center gap-2">
+                <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                Key Health Benefits
+              </h4>
+              <ul className="space-y-2 text-xs sm:text-sm text-slate-600">
+                {product.benefits.map((b, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-          {/* Nutrition and Processing Highlights */}
-          {product.nutritionHighlights && (
+          {product.nutritionHighlights && Object.keys(product.nutritionHighlights).length > 0 && (
             <div className="p-5 rounded-2xl bg-cream-50 border border-cream-200">
               <h4 className="font-serif font-bold text-base text-forest-900 mb-3 flex items-center gap-2">
                 <Leaf className="w-5 h-5 text-emerald-600" />
@@ -342,7 +413,7 @@ export const ProductDetailPage: React.FC = () => {
                 {Object.entries(product.nutritionHighlights).map(([key, val]) => (
                   <div key={key} className="bg-white p-3 rounded-xl border border-cream-200">
                     <p className="text-[11px] font-semibold text-slate-400 uppercase">{key}</p>
-                    <p className="text-sm font-bold text-slate-800">{val}</p>
+                    <p className="text-sm font-bold text-slate-800">{String(val)}</p>
                   </div>
                 ))}
               </div>
