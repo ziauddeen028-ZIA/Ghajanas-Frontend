@@ -26,7 +26,7 @@ export const WhyChooseUs: React.FC = () => {
   ];
 
   return (
-    <section className="my-16 bg-cream-50 rounded-3xl p-8 sm:p-12 border border-cream-200">
+    <section className="my-12 sm:my-16 bg-cream-50 rounded-3xl p-6 sm:p-10 lg:p-12 border border-cream-200">
       <div className="text-center max-w-2xl mx-auto mb-10">
         <span className="text-xs font-bold uppercase tracking-wider text-forest-800 bg-forest-100 px-3 py-1 rounded-full">
           The Ghajanas Difference

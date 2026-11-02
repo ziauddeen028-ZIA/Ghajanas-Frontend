@@ -65,6 +65,7 @@ export const MyOrdersPage: React.FC = () => {
   }, [token]);
 
   const getStepProgress = (status: string) => {
+    if (status === 'Cancelled') return -1;
     const idx = ORDER_STEPS.indexOf(status);
     return idx >= 0 ? idx : 0;
   };
@@ -226,37 +227,44 @@ export const MyOrdersPage: React.FC = () => {
                   <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-4">
                     Delivery Progress
                   </p>
-                  <div className="grid grid-cols-4 gap-2 relative">
-                    {ORDER_STEPS.map((step, idx) => {
-                      const isCompleted = idx <= stepIdx;
-                      const isCurrent = idx === stepIdx;
+                  {order.orderStatus === 'Cancelled' ? (
+                    <div className="flex items-center gap-2 text-rose-700 bg-rose-50 border border-rose-200 rounded-xl px-4 py-3 text-xs font-bold">
+                      <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+                      <span>This order has been Cancelled.</span>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-4 gap-1 sm:gap-2 relative">
+                      {ORDER_STEPS.map((step, idx) => {
+                        const isCompleted = idx <= stepIdx;
+                        const isCurrent = idx === stepIdx;
 
-                      return (
-                        <div key={step} className="flex flex-col items-center text-center">
-                          <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-2 transition-all ${
-                              isCompleted
-                                ? 'bg-forest-900 text-white shadow-sm'
-                                : 'bg-cream-200 text-slate-400'
-                            }`}
-                          >
-                            {isCompleted ? <Check className="w-4 h-4 text-amber-400" /> : idx + 1}
+                        return (
+                          <div key={step} className="flex flex-col items-center text-center">
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-2 transition-all ${
+                                isCompleted
+                                  ? 'bg-forest-900 text-white shadow-sm'
+                                  : 'bg-cream-200 text-slate-400'
+                              }`}
+                            >
+                              {isCompleted ? <Check className="w-4 h-4 text-amber-400" /> : idx + 1}
+                            </div>
+                            <span
+                              className={`text-xs font-semibold ${
+                                isCurrent
+                                  ? 'text-forest-900 font-bold'
+                                  : isCompleted
+                                  ? 'text-slate-800'
+                                  : 'text-slate-400'
+                              }`}
+                            >
+                              {step}
+                            </span>
                           </div>
-                          <span
-                            className={`text-xs font-semibold ${
-                              isCurrent
-                                ? 'text-forest-900 font-bold'
-                                : isCompleted
-                                ? 'text-slate-800'
-                                : 'text-slate-400'
-                            }`}
-                          >
-                            {step}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Body: Items & Address Snapshot */}

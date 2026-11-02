@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { useAuth } from '../../context/AuthContext';
-import type { OrderDetails, PaymentStatus } from '../../types';
+import { useCart } from '../../context/CartContext';
+import type { OrderDetails, PaymentStatus, OrderStatus } from '../../types';
 import { formatCurrency } from '../../utils/formatters';
 import {
   ShoppingBag,
@@ -10,16 +11,19 @@ import {
   AlertCircle,
   RefreshCw,
   ExternalLink,
+  ChevronDown,
 } from 'lucide-react';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const AdminOrdersPage: React.FC = () => {
   const { token } = useAuth();
+  const { showToast } = useCart();
   const [orders, setOrders] = useState<OrderDetails[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null);
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const fetchOrders = async () => {
     setIsLoading(true);
@@ -53,32 +57,42 @@ export const AdminOrdersPage: React.FC = () => {
     }
   }, [token]);
 
-  const togglePaymentStatus = async (orderId: string, currentStatus: PaymentStatus) => {
-    const nextStatus: PaymentStatus = currentStatus === 'Paid' ? 'Unpaid' : 'Paid';
+  const updateOrderField = async (
+    orderId: string,
+    field: 'paymentStatus' | 'orderStatus',
+    value: string
+  ) => {
     setUpdatingOrderId(orderId);
-
     try {
-      const res = await fetch(`${API_BASE_URL}/orders/${orderId}/payment-status`, {
+      const endpoint =
+        field === 'paymentStatus'
+          ? `${API_BASE_URL}/orders/${orderId}/payment-status`
+          : `${API_BASE_URL}/orders/${orderId}/order-status`;
+
+      const res = await fetch(endpoint, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ paymentStatus: nextStatus }),
+        body: JSON.stringify({ [field]: value }),
       });
 
       if (res.ok) {
+        const data = await res.json();
         setOrders((prev) =>
-          prev.map((o) => (o.orderId === orderId ? { ...o, paymentStatus: nextStatus } : o))
+          prev.map((o) => (o.orderId === orderId ? data.order : o))
         );
+        showToast(`Order ${orderId}: ${field === 'paymentStatus' ? 'Payment' : 'Order'} status updated to ${value}.`);
       } else {
         const data = await res.json().catch(() => ({}));
-        alert(data.error || 'Failed to update payment status.');
+        showToast(data.error || `Failed to update ${field}.`);
       }
     } catch {
-      alert('Error updating payment status on backend.');
+      showToast(`Error updating ${field} on backend.`);
     } finally {
       setUpdatingOrderId(null);
+      setOpenDropdown(null);
     }
   };
 
@@ -144,8 +158,9 @@ export const AdminOrdersPage: React.FC = () => {
         )}
 
         {orders.length > 0 && (
-          <div className="bg-white rounded-2xl border border-cream-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="bg-white rounded-2xl border border-cream-200 shadow-sm">
+            {/* Desktop + Tablet Orders Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-cream-100 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-cream-200">
                   <tr>
@@ -160,7 +175,6 @@ export const AdminOrdersPage: React.FC = () => {
                 </thead>
                 <tbody className="divide-y divide-cream-100">
                   {orders.map((o) => {
-                    const isPaid = o.paymentStatus === 'Paid';
                     return (
                       <tr key={o.orderId} className="hover:bg-cream-50/50 transition-colors">
                         <td className="py-3 px-4 font-mono">
@@ -197,40 +211,286 @@ export const AdminOrdersPage: React.FC = () => {
                           </span>
                         </td>
                         <td className="py-3 px-4">
-                          <button
-                            type="button"
-                            onClick={() => togglePaymentStatus(o.orderId, o.paymentStatus)}
-                            disabled={updatingOrderId === o.orderId}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center gap-1.5 transition-all shadow-xs ${
-                              isPaid
-                                ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300'
-                                : 'bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300'
-                            }`}
-                            title="Click to toggle Paid/Unpaid"
-                          >
-                            {isPaid ? (
-                              <>
-                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                                <span>Paid (Verified)</span>
-                              </>
-                            ) : (
-                              <>
-                                <Clock className="w-3.5 h-3.5 text-amber-600" />
-                                <span>Unpaid (Verify)</span>
-                              </>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setOpenDropdown(
+                                  openDropdown === `${o.orderId}-payment`
+                                    ? null
+                                    : `${o.orderId}-payment`
+                                )
+                              }
+                              disabled={updatingOrderId === o.orderId}
+                              className={`px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center justify-between gap-1.5 transition-all shadow-xs min-w-[110px] ${
+                                o.paymentStatus === 'Paid'
+                                  ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300'
+                                  : 'bg-amber-100 hover:bg-amber-200 text-amber-800 border border-amber-300'
+                              }`}
+                            >
+                              <span className="inline-flex items-center gap-1">
+                                {o.paymentStatus === 'Paid' ? (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                ) : (
+                                  <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                )}
+                                {o.paymentStatus}
+                              </span>
+                              <ChevronDown className="w-3 h-3" />
+                            </button>
+
+                            {openDropdown === `${o.orderId}-payment` && (
+                              <div className="absolute z-20 mt-1 w-full bg-white border border-cream-200 rounded-lg shadow-lg overflow-hidden">
+                                {(['Unpaid', 'Paid'] as PaymentStatus[]).map((status) => (
+                                  <button
+                                    key={status}
+                                    type="button"
+                                    disabled={updatingOrderId === o.orderId || o.paymentStatus === status}
+                                    onClick={() => updateOrderField(o.orderId, 'paymentStatus', status)}
+                                    className={`w-full text-left px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 hover:bg-cream-100 transition-colors ${
+                                      o.paymentStatus === status ? 'text-forest-900 bg-cream-50' : 'text-slate-700'
+                                    }`}
+                                  >
+                                    {status === 'Paid' ? (
+                                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    ) : (
+                                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                    )}
+                                    {status}
+                                  </button>
+                                ))}
+                              </div>
                             )}
-                          </button>
+                          </div>
                         </td>
                         <td className="py-3 px-4">
-                          <span className="inline-block px-2.5 py-1 rounded-full text-[10px] font-bold bg-forest-100 text-forest-900 border border-forest-200">
-                            {o.orderStatus || 'Received'}
-                          </span>
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setOpenDropdown(
+                                  openDropdown === `${o.orderId}-order`
+                                    ? null
+                                    : `${o.orderId}-order`
+                                )
+                              }
+                              disabled={updatingOrderId === o.orderId}
+                              className="px-2.5 py-1 rounded-lg text-xs font-bold inline-flex items-center justify-between gap-1.5 transition-all shadow-xs min-w-[120px] bg-forest-100 hover:bg-forest-200 text-forest-900 border border-forest-300"
+                            >
+                              <span>{o.orderStatus || 'Received'}</span>
+                              <ChevronDown className="w-3 h-3" />
+                            </button>
+
+                            {openDropdown === `${o.orderId}-order` && (
+                              <div className="absolute z-20 mt-1 w-full bg-white border border-cream-200 rounded-lg shadow-lg overflow-hidden">
+                                {(['Received', 'Processing', 'Dispatched', 'Delivered', 'Cancelled'] as OrderStatus[]).map(
+                                  (status) => (
+                                    <button
+                                      key={status}
+                                      type="button"
+                                      disabled={updatingOrderId === o.orderId || (o.orderStatus || 'Received') === status}
+                                      onClick={() => updateOrderField(o.orderId, 'orderStatus', status)}
+                                      className={`w-full text-left px-3 py-1.5 text-xs font-semibold hover:bg-cream-100 transition-colors ${
+                                        (o.orderStatus || 'Received') === status
+                                          ? 'text-forest-900 bg-cream-50'
+                                          : 'text-slate-700'
+                                      }`}
+                                    >
+                                      {status}
+                                    </button>
+                                  )
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Orders Cards */}
+            <div className="md:hidden divide-y divide-cream-100 border-t border-cream-100">
+              {orders.map((o) => {
+                const isPaid = o.paymentStatus === 'Paid';
+                return (
+                  <div key={o.orderId} className="p-4">
+                    <div className="bg-white rounded-2xl border border-cream-200 p-4 shadow-sm">
+                      {/* Header: order ref, date and payment badge */}
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                        <div className="flex flex-col gap-1">
+                          <p className="font-mono font-bold text-slate-900 text-sm">{o.orderId}</p>
+                          <p className="text-[10px] text-slate-400">
+                            {new Date(o.createdAt).toLocaleString('en-IN', {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </p>
+                        </div>
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold ${
+                            isPaid
+                              ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                              : 'bg-amber-100 text-amber-800 border border-amber-200'
+                          }`}
+                        >
+                          {isPaid ? (
+                            <>
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                              Paid
+                            </>
+                          ) : (
+                            <>
+                              <Clock className="w-3.5 h-3.5" />
+                              Unpaid
+                            </>
+                          )}
+                        </span>
+                      </div>
+
+                      {/* Customer snapshot grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] uppercase font-bold text-slate-400">Customer</span>
+                          <p className="font-bold text-slate-800 truncate">{o.customer?.fullName}</p>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] uppercase font-bold text-slate-400">Phone</span>
+                          <p className="text-slate-700 truncate">{o.customer?.phone}</p>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] uppercase font-bold text-slate-400">Location</span>
+                          <p className="text-[11px] text-slate-600 truncate">
+                            {o.customer?.city}, {o.customer?.pincode}
+                          </p>
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[10px] uppercase font-bold text-slate-400">Total</span>
+                          <p className="font-serif font-black text-sm text-forest-950">
+                            {formatCurrency(o.total)}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Items summary */}
+                      <div className="mb-4">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block mb-2">
+                          Items ({o.items.length})
+                        </span>
+                        <div className="space-y-1.5">
+                          {o.items.map((it, idx) => (
+                            <div key={idx} className="flex justify-between text-[11px]">
+                              <span className="text-slate-700">
+                                • {it.productName} ({it.selectedWeight.label}) × {it.quantity}
+                              </span>
+                              <span className="font-semibold text-slate-900">
+                                {formatCurrency(it.selectedWeight.price * it.quantity)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Status actions */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="relative w-full">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenDropdown(
+                                openDropdown === `${o.orderId}-payment`
+                                  ? null
+                                  : `${o.orderId}-payment`
+                              )
+                            }
+                            disabled={updatingOrderId === o.orderId}
+                            className={`w-full px-3 py-2 rounded-lg text-xs font-bold inline-flex items-center justify-between gap-1.5 transition-all shadow-xs border ${
+                              isPaid
+                                ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border-emerald-300'
+                                : 'bg-amber-100 hover:bg-amber-200 text-amber-800 border-amber-300'
+                            }`}
+                          >
+                            <span className="inline-flex items-center gap-1.5">
+                              {isPaid ? (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              ) : (
+                                <Clock className="w-3.5 h-3.5 text-amber-600" />
+                              )}
+                              {o.paymentStatus}
+                            </span>
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+
+                          {openDropdown === `${o.orderId}-payment` && (
+                            <div className="absolute left-0 w-full mt-1.5 z-20 bg-white border border-cream-200 rounded-lg shadow-lg overflow-hidden">
+                              {(['Unpaid', 'Paid'] as PaymentStatus[]).map((status) => (
+                                <button
+                                  key={status}
+                                  type="button"
+                                  disabled={updatingOrderId === o.orderId || o.paymentStatus === status}
+                                  onClick={() => updateOrderField(o.orderId, 'paymentStatus', status)}
+                                  className={`w-full text-left px-3 py-2 text-xs font-semibold flex items-center gap-1.5 hover:bg-cream-100 transition-colors ${
+                                    o.paymentStatus === status ? 'text-forest-900 bg-cream-50' : 'text-slate-700'
+                                  }`}
+                                >
+                                  {status === 'Paid' ? (
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                  ) : (
+                                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                  )}
+                                  {status}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="relative w-full">
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setOpenDropdown(
+                                openDropdown === `${o.orderId}-order`
+                                  ? null
+                                  : `${o.orderId}-order`
+                              )
+                            }
+                            disabled={updatingOrderId === o.orderId}
+                            className="w-full px-3 py-2 rounded-lg text-xs font-bold inline-flex items-center justify-between gap-1.5 transition-all shadow-xs border border-forest-300 bg-forest-100 hover:bg-forest-200 text-forest-900"
+                          >
+                            <span>{o.orderStatus || 'Received'}</span>
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+
+                          {openDropdown === `${o.orderId}-order` && (
+                            <div className="absolute left-0 w-full mt-1.5 z-20 bg-white border border-cream-200 rounded-lg shadow-lg overflow-hidden">
+                              {(['Received', 'Processing', 'Dispatched', 'Delivered', 'Cancelled'] as OrderStatus[]).map(
+                                (status) => (
+                                  <button
+                                    key={status}
+                                    type="button"
+                                    disabled={updatingOrderId === o.orderId || (o.orderStatus || 'Received') === status}
+                                    onClick={() => updateOrderField(o.orderId, 'orderStatus', status)}
+                                    className={`w-full text-left px-3 py-2 text-xs font-semibold hover:bg-cream-100 transition-colors ${
+                                      (o.orderStatus || 'Received') === status
+                                        ? 'text-forest-900 bg-cream-50'
+                                        : 'text-slate-700'
+                                    }`}
+                                  >
+                                    {status}
+                                  </button>
+                                )
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

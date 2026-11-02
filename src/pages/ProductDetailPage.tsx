@@ -286,7 +286,7 @@ export const ProductDetailPage: React.FC = () => {
           </div>
 
           {/* Dynamic Price Display */}
-          <div className="bg-cream-50 p-4 rounded-2xl border border-cream-200 mb-6 flex items-baseline gap-3">
+          <div className="bg-cream-50 p-4 rounded-2xl border border-cream-200 mb-6 flex flex-wrap items-baseline gap-3">
             <span className="font-serif font-black text-3xl text-forest-950">
               {formatCurrency(currentWeight.price * quantity)}
             </span>
@@ -295,7 +295,7 @@ export const ProductDetailPage: React.FC = () => {
                 {formatCurrency(currentWeight.originalPrice * quantity)}
               </span>
             )}
-            <span className="text-xs text-slate-500 ml-auto flex items-center gap-1 font-semibold">
+            <span className="w-full sm:w-auto sm:ml-auto text-center sm:text-right text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
               <PackageCheck className="w-4 h-4 text-emerald-600" />
               {currentWeight.inStock ? 'In Stock — Fresh Batch' : 'Out of Stock'}
             </span>
@@ -358,7 +358,7 @@ export const ProductDetailPage: React.FC = () => {
           </div>
 
           {/* Quick Assurance Badges */}
-          <div className="pt-4 border-t border-cream-200 grid grid-cols-3 gap-2 text-center text-[11px] text-slate-500">
+          <div className="pt-4 border-t border-cream-200 grid grid-cols-1 sm:grid-cols-3 gap-2 text-center text-[11px] text-slate-500">
             <div className="p-2 rounded-xl bg-cream-50">
               <Truck className="w-4 h-4 text-forest-700 mx-auto mb-1" />
               <span>Doorstep Delivery</span>

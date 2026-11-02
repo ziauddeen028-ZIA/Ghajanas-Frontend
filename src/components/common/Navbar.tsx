@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useLayoutEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Search,
@@ -29,6 +29,26 @@ export const Navbar: React.FC = () => {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState('Tiruchirappalli (620019)');
   const [searchQuery, setSearchQuery] = useState('');
+  const headerRef = useRef<HTMLElement>(null);
+  const [headerHeight, setHeaderHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    const updateHeight = () => {
+      setHeaderHeight(header.getBoundingClientRect().height);
+    };
+
+    updateHeight();
+
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(header);
+
+    return () => observer.disconnect();
+  }, []);
+
+
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -77,8 +97,8 @@ export const Navbar: React.FC = () => {
       {/* Top Banner */}
       <div className="bg-forest-950 text-cream-200 text-xs py-2 px-4 border-b border-forest-800">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-medium">
+          <div className="flex items-center gap-2 flex-wrap min-w-0">
+            <span className="inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 px-2 py-0.5 rounded-full font-medium shrink-0">
               <Sparkles className="w-3 h-3 text-emerald-400" />
               100% Traditional & Organic
             </span>
@@ -86,7 +106,7 @@ export const Navbar: React.FC = () => {
               Free delivery on orders above ₹500 across South India
             </span>
           </div>
-          <div className="flex items-center gap-4 text-cream-300">
+          <div className="flex items-center gap-4 text-cream-300 flex-wrap min-w-0">
             <a
               href={`tel:${STORE_PHONE_NUMBER}`}
               className="flex items-center gap-1 hover:text-white transition-colors"
@@ -108,8 +128,13 @@ export const Navbar: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Sticky Navbar */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md shadow-sm border-b border-cream-200">
+      {/* Main Fixed Navbar */}
+      <div style={{ height: headerHeight }} aria-hidden="true" />
+
+      <header
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 w-full z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-cream-200"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3">
           <div className="flex items-center justify-between gap-4">
             {/* Mobile menu button */}
@@ -289,7 +314,7 @@ export const Navbar: React.FC = () => {
         </div>
 
         {/* Secondary Category Navigation Bar (Desktop) */}
-        <nav className="hidden lg:block border-t border-cream-200 bg-cream-50/70">
+        <nav className="hidden md:block border-t border-cream-200 bg-cream-50/70">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <ul className="flex items-center gap-1 py-1.5 text-xs font-semibold text-slate-700 overflow-x-auto">
               {navLinks.map((link) => {
@@ -298,11 +323,10 @@ export const Navbar: React.FC = () => {
                   <li key={link.path}>
                     <Link
                       to={link.path}
-                      className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
-                        isActive
-                          ? 'bg-forest-800 text-white'
-                          : 'hover:bg-cream-200 text-slate-700'
-                      }`}
+                      className={`px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors ${isActive
+                        ? 'bg-forest-800 text-white'
+                        : 'hover:bg-cream-200 text-slate-700'
+                        }`}
                     >
                       {link.label}
                     </Link>

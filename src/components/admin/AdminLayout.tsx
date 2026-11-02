@@ -73,7 +73,7 @@ export const AdminLayout: React.FC<{ children: React.ReactNode; title: string; s
         {/* Admin Tabs */}
         <div className="border-t border-forest-900/80 bg-forest-950/80">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <nav className="flex space-x-2">
+            <nav className="flex space-x-2 overflow-x-auto pb-1">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location.pathname === item.path;

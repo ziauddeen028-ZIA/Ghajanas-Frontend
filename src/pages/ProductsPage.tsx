@@ -240,7 +240,7 @@ export const ProductsPage: React.FC = () => {
 
       {/* Filter Status & Count */}
       {!isLoading && !error && (
-        <div className="flex items-center justify-between text-xs text-slate-500 mb-4 px-1">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 mb-4 px-1">
           <p>
             Showing <strong className="text-slate-900">{filteredProducts.length}</strong> authentic products
           </p>

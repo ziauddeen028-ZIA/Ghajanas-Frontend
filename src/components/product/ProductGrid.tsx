@@ -35,7 +35,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
           </div>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
@@ -82,7 +82,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}

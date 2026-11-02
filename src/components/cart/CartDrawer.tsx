@@ -48,8 +48,8 @@ export const CartDrawer: React.FC = () => {
       />
 
       {/* Drawer */}
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col">
+        <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
+          <div className="max-w-md w-full bg-white shadow-2xl flex flex-col">
           {/* Header */}
           <div className="p-5 bg-forest-950 text-white flex items-center justify-between border-b border-forest-800">
             <div className="flex items-center gap-2.5">

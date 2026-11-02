@@ -54,7 +54,7 @@ export const HomePage: React.FC = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-4">
       {/* Hero Section */}
       <HeroBanner />
 
@@ -98,7 +98,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* WhatsApp Fast Ordering Banner */}
-      <section className="my-14 rounded-3xl bg-gradient-to-r from-emerald-800 via-forest-900 to-forest-950 text-white p-8 sm:p-12 border border-emerald-700 shadow-xl relative overflow-hidden">
+      <section className="my-12 sm:my-14 rounded-3xl bg-gradient-to-r from-emerald-800 via-forest-900 to-forest-950 text-white p-6 sm:p-8 lg:p-12 border border-emerald-700 shadow-xl relative overflow-hidden">
         <div className="max-w-2xl relative z-10 space-y-4">
           <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold uppercase tracking-wider">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />

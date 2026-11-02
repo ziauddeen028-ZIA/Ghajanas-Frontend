@@ -11,12 +11,12 @@ export const HeroBanner: React.FC = () => {
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-forest-950 via-forest-900 to-emerald-950 text-white rounded-3xl my-6 border border-forest-800 shadow-2xl">
       {/* Decorative background blurs */}
-      <div className="absolute -top-24 -right-24 w-96 h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -top-20 -right-20 w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-20 -left-20 w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-10 py-12 md:py-20 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 py-8 sm:py-12 md:py-20 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 items-center">
         {/* Left Column Text */}
-        <div className="lg:col-span-7 space-y-6">
+        <div className="lg:col-span-7 space-y-5 sm:space-y-6">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold tracking-wide">
             <Sparkles className="w-3.5 h-3.5 text-amber-400" />
             <span>Farm-Fresh • Chemical-Free • Unpolished</span>
@@ -39,7 +39,7 @@ export const HeroBanner: React.FC = () => {
           </p>
 
           {/* Action CTAs */}
-          <div className="flex flex-wrap items-center gap-3 pt-2">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-2">
             <Link
               to="/products"
               className="px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 group"
@@ -60,7 +60,7 @@ export const HeroBanner: React.FC = () => {
           </div>
 
           {/* Key Trust Counters */}
-          <div className="pt-6 border-t border-forest-800/80 grid grid-cols-3 gap-4 text-left">
+          <div className="pt-6 border-t border-forest-800/80 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
             <div>
               <p className="font-serif font-black text-xl sm:text-2xl text-amber-400">100%</p>
               <p className="text-xs text-cream-300">Pure & Native</p>
@@ -78,11 +78,11 @@ export const HeroBanner: React.FC = () => {
 
         {/* Right Column Visual Card */}
         <div className="lg:col-span-5 relative">
-          <div className="relative mx-auto max-w-sm rounded-3xl overflow-hidden shadow-2xl border-2 border-forest-700/60 bg-forest-900/60 backdrop-blur-md p-3">
+          <div className="relative mx-auto max-w-sm sm:max-w-md lg:max-w-sm rounded-3xl overflow-hidden shadow-2xl border-2 border-forest-700/60 bg-forest-900/60 backdrop-blur-md p-3">
             <img
               src="https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80"
               alt="Organic Naatu Sakkarai and Traditional Rice"
-              className="w-full h-72 sm:h-80 object-cover rounded-2xl"
+              className="w-full h-64 sm:h-72 lg:h-80 object-cover rounded-2xl"
             />
             {/* Overlay badge 1 */}
             <div className="absolute top-6 left-6 bg-forest-950/90 border border-forest-700 backdrop-blur-md px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-lg">

@@ -20,7 +20,7 @@ export const Footer: React.FC = () => {
     <footer className="bg-forest-950 text-cream-200 pt-16 pb-8 border-t-4 border-amber-500">
       {/* Trust & Quality Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-12">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-2xl bg-forest-900/80 border border-forest-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-2xl bg-forest-900/80 border border-forest-800">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
               <Leaf className="w-5 h-5" />

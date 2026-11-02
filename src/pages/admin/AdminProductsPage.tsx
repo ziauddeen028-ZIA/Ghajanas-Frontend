@@ -698,7 +698,7 @@ export const AdminProductsPage: React.FC = () => {
                         </div>
 
                         {/* Status & Actions row */}
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                           <div className="flex items-center gap-1.5">
                             <button
                               type="button"
@@ -753,8 +753,9 @@ export const AdminProductsPage: React.FC = () => {
 
         {/* CATEGORIES VIEW */}
         {activeTab === 'categories' && (
-          <div className="bg-white rounded-2xl border border-cream-200 shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
+          <div className="bg-white rounded-2xl border border-cream-200 shadow-sm">
+            {/* Desktop + Tablet Categories Table */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead className="bg-cream-100 text-slate-700 font-bold uppercase tracking-wider text-[10px] border-b border-cream-200">
                   <tr>
@@ -837,6 +838,78 @@ export const AdminProductsPage: React.FC = () => {
                   ))}
                 </tbody>
               </table>
+            </div>
+
+            {/* Mobile Categories Cards */}
+            <div className="md:hidden divide-y divide-cream-100 border-t border-cream-100">
+              {categories.map((c) => (
+                <div key={c.id} className="p-4">
+                  <div className="bg-white rounded-2xl border border-cream-200 p-4 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      {c.image ? (
+                        <img
+                          src={c.image}
+                          alt={c.name}
+                          className="w-16 h-16 rounded-xl object-cover bg-cream-100 border border-cream-200 shrink-0"
+                        />
+                      ) : (
+                        <div className="w-16 h-16 rounded-xl bg-forest-900 text-amber-400 flex items-center justify-center font-bold shrink-0">
+                          <Sparkles className="w-6 h-6" />
+                        </div>
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900 text-sm">{c.name}</p>
+                        {c.tamilName && (
+                          <p className="text-[11px] text-emerald-800 font-medium">{c.tamilName}</p>
+                        )}
+                        <p className="text-[10px] text-slate-400 mt-1 font-mono">/{c.slug}</p>
+                      </div>
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Products</span>
+                        <span className="text-slate-700 font-semibold">
+                          {c.itemCount} {c.itemCount === 1 ? 'Variety' : 'Varieties'}
+                        </span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[10px] uppercase font-bold text-slate-400">Status</span>
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                          c.isActive !== false ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {c.isActive !== false ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      {c.isPopular && (
+                        <div className="flex flex-col gap-1 col-span-2 sm:col-span-1">
+                          <span className="text-[10px] uppercase font-bold text-slate-400">Badge</span>
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                            Popular
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-4 flex items-center gap-2">
+                      <button
+                        onClick={() => handleOpenCategoryModal(c)}
+                        className="flex-1 px-3 py-2 rounded-lg bg-cream-100 hover:bg-forest-100 text-forest-800 text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
+                      <button
+                        onClick={() => setDeletingCategoryId(c.id)}
+                        className="px-3 py-2 rounded-lg bg-cream-100 hover:bg-rose-100 text-rose-700 text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>Delete</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -1013,9 +1086,9 @@ export const AdminProductsPage: React.FC = () => {
                     {formVariants.map((v, idx) => (
                       <div
                         key={idx}
-                        className="grid grid-cols-2 sm:grid-cols-5 gap-2 items-center bg-white p-2.5 rounded-xl border border-cream-200"
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 gap-y-2.5 items-start sm:items-center bg-white p-2.5 rounded-xl border border-cream-200"
                       >
-                        <div>
+                        <div className="col-span-1 sm:col-span-1 lg:col-span-1">
                           <span className="text-[10px] text-slate-400 block mb-0.5">Pack / Weight</span>
                           <input
                             type="text"
@@ -1030,7 +1103,7 @@ export const AdminProductsPage: React.FC = () => {
                             className="w-full px-2 py-1 bg-cream-50 border border-cream-200 rounded-lg text-xs"
                           />
                         </div>
-                        <div>
+                        <div className="col-span-1 sm:col-span-1 lg:col-span-1">
                           <span className="text-[10px] text-slate-400 block mb-0.5">Price (₹)</span>
                           <input
                             type="number"
@@ -1046,7 +1119,7 @@ export const AdminProductsPage: React.FC = () => {
                             className="w-full px-2 py-1 bg-cream-50 border border-cream-200 rounded-lg text-xs"
                           />
                         </div>
-                        <div>
+                        <div className="col-span-1 sm:col-span-1 lg:col-span-1">
                           <span className="text-[10px] text-slate-400 block mb-0.5">MRP / Strike (₹)</span>
                           <input
                             type="number"
@@ -1062,7 +1135,7 @@ export const AdminProductsPage: React.FC = () => {
                             className="w-full px-2 py-1 bg-cream-50 border border-cream-200 rounded-lg text-xs"
                           />
                         </div>
-                        <div>
+                        <div className="col-span-1 sm:col-span-1 lg:col-span-1">
                           <span className="text-[10px] text-slate-400 block mb-0.5">Inventory Stock</span>
                           <input
                             type="number"
@@ -1076,7 +1149,7 @@ export const AdminProductsPage: React.FC = () => {
                             className="w-full px-2 py-1 bg-cream-50 border border-cream-200 rounded-lg text-xs"
                           />
                         </div>
-                        <div className="flex items-center justify-between sm:justify-end gap-2 col-span-2 sm:col-span-1 pt-1 sm:pt-0">
+                        <div className="col-span-1 sm:col-span-1 lg:col-span-1 flex flex-col sm:flex-row items-end sm:items-center justify-between gap-2 w-full">
                           <label className="flex items-center gap-1 text-[11px] font-semibold text-slate-700 cursor-pointer">
                             <input
                               type="checkbox"
@@ -1086,7 +1159,7 @@ export const AdminProductsPage: React.FC = () => {
                                 updated[idx].inStock = e.target.checked;
                                 setFormVariants(updated);
                               }}
-                              className="rounded text-forest-700"
+                              className="rounded text-forest-700 w-4 h-4"
                             />
                             <span>In Stock</span>
                           </label>
@@ -1177,18 +1250,18 @@ export const AdminProductsPage: React.FC = () => {
                 </div>
 
                 {/* Form Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-cream-200">
+                <div className="flex flex-col sm:flex-row items-end sm:justify-end gap-2 sm:gap-3 pt-3 border-t border-cream-200 w-full">
                   <button
                     type="button"
                     onClick={() => setIsProductModalOpen(false)}
-                    className="px-4 py-2 border border-cream-300 rounded-xl text-xs font-bold text-slate-600 hover:bg-cream-100"
+                    className="w-full sm:w-auto px-4 py-2 border border-cream-300 rounded-xl text-xs font-bold text-slate-600 hover:bg-cream-100"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={isSubmitting}
-                    className="px-6 py-2 bg-forest-900 hover:bg-forest-950 text-white rounded-xl text-xs font-bold shadow-sm disabled:opacity-50"
+                    className="w-full sm:w-auto px-6 py-2 bg-forest-900 hover:bg-forest-950 text-white rounded-xl text-xs font-bold shadow-sm disabled:opacity-50"
                   >
                     {isSubmitting ? 'Saving to Database...' : editingProduct ? 'Save Changes' : 'Create Product'}
                   </button>
@@ -1282,7 +1355,7 @@ export const AdminProductsPage: React.FC = () => {
                   />
                 </div>
 
-                <div className="flex items-center gap-6 p-3 bg-cream-50 rounded-xl border border-cream-200">
+                <div className="flex flex-wrap items-center gap-3 p-3 bg-cream-50 rounded-xl border border-cream-200">
                   <label className="flex items-center gap-2 cursor-pointer font-bold text-slate-800">
                     <input
                       type="checkbox"
