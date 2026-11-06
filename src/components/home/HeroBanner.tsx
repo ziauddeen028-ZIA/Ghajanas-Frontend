@@ -48,15 +48,7 @@ export const HeroBanner: React.FC = () => {
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
 
-            <a
-              href={whatsappUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-sm rounded-xl border border-white/20 transition-all flex items-center gap-2 backdrop-blur-md"
-            >
-              <MessageCircle className="w-4 h-4 text-emerald-400 fill-emerald-400" />
-              <span>Order on WhatsApp</span>
-            </a>
+
           </div>
 
           {/* Key Trust Counters */}

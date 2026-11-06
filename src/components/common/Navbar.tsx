@@ -102,9 +102,6 @@ export const Navbar: React.FC = () => {
               <Sparkles className="w-3 h-3 text-emerald-400" />
               100% Traditional & Organic
             </span>
-            <span className="hidden sm:inline text-cream-300">
-              Free delivery on orders above ₹500 across South India
-            </span>
           </div>
           <div className="flex items-center gap-4 text-cream-300 flex-wrap min-w-0">
             <a
@@ -161,22 +158,6 @@ export const Navbar: React.FC = () => {
               </div>
             </Link>
 
-            {/* Location Selector */}
-            <button
-              onClick={() => setIsLocationModalOpen(true)}
-              className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-cream-100 hover:bg-cream-200 border border-cream-300 text-xs text-left transition-colors"
-            >
-              <div className="p-1 rounded-full bg-forest-900 text-white">
-                <MapPin className="w-3 h-3" />
-              </div>
-              <div>
-                <p className="text-[10px] font-semibold uppercase text-slate-500">Deliver to</p>
-                <p className="font-bold text-slate-800 truncate max-w-[140px] flex items-center gap-0.5">
-                  {selectedLocation}
-                  <ChevronDown className="w-3 h-3 text-slate-500" />
-                </p>
-              </div>
-            </button>
 
             {/* Search Bar (Desktop) */}
             <form
@@ -396,19 +377,6 @@ export const Navbar: React.FC = () => {
               )}
             </div>
 
-            <button
-              onClick={() => {
-                setIsLocationModalOpen(true);
-                setIsMobileMenuOpen(false);
-              }}
-              className="w-full flex items-center justify-between p-2.5 rounded-xl bg-cream-100 text-xs"
-            >
-              <div className="flex items-center gap-2 text-slate-700">
-                <MapPin className="w-4 h-4 text-forest-700" />
-                <span>Deliver to: <strong>{selectedLocation}</strong></span>
-              </div>
-              <span className="text-forest-700 font-bold">Change</span>
-            </button>
 
             <div className="border-t border-cream-200 pt-2">
               <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">

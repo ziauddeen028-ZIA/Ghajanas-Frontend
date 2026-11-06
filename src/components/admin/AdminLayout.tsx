@@ -42,9 +42,7 @@ export const AdminLayout: React.FC<{ children: React.ReactNode; title: string; s
             </div>
             <div>
               <span className="font-serif font-black text-lg tracking-tight">Ghajanas Admin</span>
-              <span className="ml-2 text-[10px] font-bold bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full uppercase">
-                Phase 1 Foundation
-              </span>
+
             </div>
           </div>
 

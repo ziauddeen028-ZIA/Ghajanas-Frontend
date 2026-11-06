@@ -1,7 +1,7 @@
 import type { CartItem, CheckoutFormData, Product, WeightOption } from '../types';
 import { formatCurrency } from './formatters';
 
-export const STORE_PHONE_NUMBER = '916382240715'; // Ghajanas Customer Care / Order Desk
+export const STORE_PHONE_NUMBER = '919791796170'; // Ghajanas Customer Care / Order Desk
 
 /**
  * Creates a prefilled WhatsApp order message for the complete checkout order.

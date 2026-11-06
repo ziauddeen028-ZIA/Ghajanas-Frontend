@@ -326,7 +326,7 @@ export const ProductDetailPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+            <div className="grid grid-cols-1 sm:grid-cols-1 gap-3 pt-2">
               <button
                 type="button"
                 onClick={handleAddToCart}
@@ -344,15 +344,6 @@ export const ProductDetailPage: React.FC = () => {
                     <span>Add to Cart</span>
                   </>
                 )}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleOrderOnWhatsApp}
-                className="py-3.5 px-6 rounded-xl font-bold text-sm bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
-              >
-                <MessageCircle className="w-5 h-5 fill-white" />
-                <span>Order on WhatsApp</span>
               </button>
             </div>
           </div>

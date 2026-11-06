@@ -171,6 +171,15 @@ export const Footer: React.FC = () => {
                 About Our Farmers
               </a>
             </li>
+            {/* Admin Login */}
+            <li className="pt-2 mt-2 border-t border-forest-800">
+              <Link
+                to="/admin/login"
+                className="inline-flex items-center gap-2 text-cream-400 hover:text-amber-400 transition-colors"
+              >
+                Admin Login
+              </Link>
+            </li>
           </ul>
         </div>
 
