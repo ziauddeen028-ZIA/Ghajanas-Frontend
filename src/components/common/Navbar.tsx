@@ -3,7 +3,6 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import {
   Search,
   ShoppingBag,
-  MapPin,
   Menu,
   X,
   Phone,

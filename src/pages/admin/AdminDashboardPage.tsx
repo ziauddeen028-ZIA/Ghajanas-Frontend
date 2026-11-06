@@ -4,11 +4,7 @@ import { AdminLayout } from '../../components/admin/AdminLayout';
 import {
   ShoppingBag,
   Package,
-  Clock,
-  Sparkles,
   ArrowRight,
-  Database,
-  Lock,
 } from 'lucide-react';
 
 export const AdminDashboardPage: React.FC = () => {

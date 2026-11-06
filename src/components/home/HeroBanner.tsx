@@ -1,12 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, MessageCircle, Sparkles, ShieldCheck, Award } from 'lucide-react';
-import { generateWhatsAppLink } from '../../utils/whatsapp';
+import { ArrowRight, Sparkles, ShieldCheck, Award } from 'lucide-react';
+
 
 export const HeroBanner: React.FC = () => {
-  const whatsappUrl = generateWhatsAppLink(
-    '🌿 Hello Ghajanas! I want to explore your traditional grocery catalog and order via WhatsApp.'
-  );
+
 
   return (
     <div className="relative overflow-hidden bg-gradient-to-br from-forest-950 via-forest-900 to-emerald-950 text-white rounded-3xl my-6 border border-forest-800 shadow-2xl">

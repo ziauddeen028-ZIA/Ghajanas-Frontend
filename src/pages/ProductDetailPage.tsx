@@ -5,11 +5,10 @@ import { getProductById, getProducts } from '../services/catalogApi';
 import { useCart } from '../context/CartContext';
 import { ProductGrid } from '../components/product/ProductGrid';
 import { formatCurrency, calculateDiscountPercent } from '../utils/formatters';
-import { createSingleProductWhatsAppMessage, generateWhatsAppLink } from '../utils/whatsapp';
+
 import {
   Star,
   ShoppingBag,
-  MessageCircle,
   MapPin,
   Check,
   ShieldCheck,
@@ -146,10 +145,6 @@ export const ProductDetailPage: React.FC = () => {
     }
   };
 
-  const handleOrderOnWhatsApp = () => {
-    const msg = createSingleProductWhatsAppMessage(product, currentWeight, quantity);
-    window.open(generateWhatsAppLink(msg), '_blank');
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
