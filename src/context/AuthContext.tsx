@@ -5,7 +5,9 @@ import type { CustomerProfile, PendingCartAction } from '../types';
 
 const PENDING_CART_STORAGE_KEY = 'ghajanas_pending_cart_action';
 const PROFILE_STORAGE_KEY = 'ghajanas_customer_profile';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+).replace(/\/+$/, '');
 
 interface AuthContextType {
   user: User | null;

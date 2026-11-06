@@ -23,7 +23,9 @@ import {
   Check,
 } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const API_BASE_URL = (
+  import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+).replace(/\/+$/, '');
 const OWNER_UPI_ID = import.meta.env.VITE_OWNER_UPI_ID || '919791796170@upi';
 const OWNER_UPI_NAME = import.meta.env.VITE_OWNER_UPI_NAME || 'Ghajanas';
 
