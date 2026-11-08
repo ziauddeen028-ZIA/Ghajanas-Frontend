@@ -9,10 +9,9 @@ import { formatCurrency, calculateDiscountPercent } from '../utils/formatters';
 import {
   Star,
   ShoppingBag,
-  MapPin,
   Check,
   ShieldCheck,
-  Truck,
+  
   Leaf,
   Plus,
   Minus,
@@ -145,12 +144,15 @@ export const ProductDetailPage: React.FC = () => {
 
   const handleIncrement = () => {
     if (!currentWeight.inStock) return;
+    if (cartQty === 0) return;
     if (currentWeight.stockCount !== undefined && cartQty + 1 > currentWeight.stockCount) return;
     addToCart(product, currentWeight, 1);
     showToast('Quantity updated');
   };
 
   const handleDecrement = () => {
+    if (!currentWeight.inStock) return;
+    if (cartQty === 0) return;
     if (cartQty <= 1) {
       removeFromCart(product.id, currentWeight.id);
     } else {
@@ -228,10 +230,7 @@ export const ProductDetailPage: React.FC = () => {
             <span className="px-2.5 py-1 bg-forest-100 text-forest-800 rounded-lg font-bold uppercase tracking-wider">
               {product.categoryName}
             </span>
-            <span className="flex items-center gap-1 text-slate-600 font-medium">
-              <MapPin className="w-3.5 h-3.5 text-amber-600" />
-              Sourced from: <strong>{product.origin}</strong>
-            </span>
+
           </div>
 
           {/* Title */}
@@ -277,7 +276,11 @@ export const ProductDetailPage: React.FC = () => {
                 return (
                   <button
                     key={opt.id}
-                    onClick={() => setSelectedWeight(opt)}
+                    type="button"
+                    onClick={() => {
+                      setSelectedWeight(opt);
+                      setIsAddedFeedback(false);
+                    }}
                     className={`py-2 px-4 rounded-xl text-xs font-bold transition-all flex flex-col items-start ${
                       isSelected
                         ? 'bg-forest-900 text-white shadow-md ring-2 ring-forest-700'
@@ -322,7 +325,7 @@ export const ProductDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleDecrement}
-                  disabled={!currentWeight.inStock || cartQty <= 1}
+                  disabled={!currentWeight.inStock || cartQty === 0}
                   className="p-2 hover:bg-cream-100 text-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Minus className="w-4 h-4" />
@@ -331,7 +334,11 @@ export const ProductDetailPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleIncrement}
-                  disabled={!currentWeight.inStock || (currentWeight.stockCount !== undefined && cartQty >= currentWeight.stockCount)}
+                  disabled={
+                    !currentWeight.inStock ||
+                    cartQty === 0 ||
+                    (currentWeight.stockCount !== undefined && cartQty >= currentWeight.stockCount)
+                  }
                   className="p-2 hover:bg-cream-100 text-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Plus className="w-4 h-4" />
@@ -340,42 +347,36 @@ export const ProductDetailPage: React.FC = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-1 gap-3 pt-2">
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                disabled={!currentWeight.inStock}
-                className="py-3.5 px-6 rounded-xl font-bold text-sm bg-forest-900 hover:bg-forest-950 text-white flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-              >
-                {isAddedFeedback ? (
-                  <>
-                    <Check className="w-5 h-5 text-emerald-400" />
-                    <span>Added to Cart!</span>
-                  </>
-                ) : (
-                  <>
-                    <ShoppingBag className="w-5 h-5 text-amber-400" />
-                    <span>Add to Cart</span>
-                  </>
-                )}
-              </button>
+              {cartQty === 0 ? (
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={!currentWeight.inStock}
+                  className="py-3.5 px-6 rounded-xl font-bold text-sm bg-forest-900 hover:bg-forest-950 text-white flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                >
+                  {isAddedFeedback ? (
+                    <>
+                      <Check className="w-5 h-5 text-emerald-400" />
+                      <span>Added to Cart!</span>
+                    </>
+                  ) : (
+                    <>
+                      <ShoppingBag className="w-5 h-5 text-amber-400" />
+                      <span>Add to Cart</span>
+                    </>
+                  )}
+                </button>
+              ) : (
+                <div className="flex items-center justify-center gap-2 py-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                  <span className="flex items-center gap-1.5 text-emerald-800 font-semibold text-sm">
+                    <Check className="w-4 h-4" />
+                    <span>Already in Cart</span>
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Quick Assurance Badges */}
-          <div className="pt-4 border-t border-cream-200 grid grid-cols-1 sm:grid-cols-3 gap-2 text-center text-[11px] text-slate-500">
-            <div className="p-2 rounded-xl bg-cream-50">
-              <Truck className="w-4 h-4 text-forest-700 mx-auto mb-1" />
-              <span>Doorstep Delivery</span>
-            </div>
-            <div className="p-2 rounded-xl bg-cream-50">
-              <ShieldCheck className="w-4 h-4 text-forest-700 mx-auto mb-1" />
-              <span>100% Native Seeds</span>
-            </div>
-            <div className="p-2 rounded-xl bg-cream-50">
-              <Leaf className="w-4 h-4 text-forest-700 mx-auto mb-1" />
-              <span>Chemical Free</span>
-            </div>
-          </div>
         </div>
       </div>
 

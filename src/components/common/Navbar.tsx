@@ -309,12 +309,7 @@ export const Navbar: React.FC = () => {
                   </li>
                 );
               })}
-              <li className="ml-auto">
-                <span className="flex items-center gap-1 text-[11px] font-medium text-forest-800">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  Farm-Gate Tested Purity
-                </span>
-              </li>
+
             </ul>
           </div>
         </nav>

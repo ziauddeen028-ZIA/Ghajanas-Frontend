@@ -6,8 +6,7 @@ import { ProductGrid } from '../components/product/ProductGrid';
 import type { Product } from '../types';
 import { getProducts } from '../services/catalogApi';
 import { Link } from 'react-router-dom';
-import { MessageCircle, ArrowRight, Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
-import { generateWhatsAppLink } from '../utils/whatsapp';
+import { ArrowRight, RefreshCw, AlertCircle, Leaf, Sprout, Truck } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
@@ -48,10 +47,6 @@ export const HomePage: React.FC = () => {
       catId.includes('millet')
     );
   });
-
-  const whatsappBannerUrl = generateWhatsAppLink(
-    '🌿 Hello Ghajanas! I am browsing your store and would like assistance with ordering traditional groceries.'
-  );
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-[100px] sm:pt-0 sm:pb-4">
@@ -97,30 +92,37 @@ export const HomePage: React.FC = () => {
         )}
       </section>
 
-      {/* WhatsApp Fast Ordering Banner */}
-      <section className="my-12 sm:my-14 rounded-3xl bg-gradient-to-r from-emerald-800 via-forest-900 to-forest-950 text-white p-6 sm:p-8 lg:p-12 border border-emerald-700 shadow-xl relative overflow-hidden">
-        <div className="max-w-2xl relative z-10 space-y-4">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold uppercase tracking-wider">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            Prefer Ordering via Chat?
+      {/* Farm-to-Home Promotional Banner */}
+      <section className="my-12 sm:my-14 rounded-3xl p-6 sm:p-8 lg:p-12 relative overflow-hidden text-white" style={{ backgroundImage: "url('/src/assets/footer-bg.png')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+        <div className="absolute inset-0 z-0 bg-forest-950/70" />
+        <div className="max-w-2xl relative z-10 space-y-5">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-300 rounded-full text-xs font-bold uppercase tracking-wider border border-emerald-400/30">
+            <Leaf className="w-3.5 h-3.5 text-amber-400" />
+            FARM FRESH • NATURALLY SOURCED
           </span>
           <h2 className="font-serif font-extrabold text-2xl sm:text-4xl text-white leading-tight">
-            Order All Your Groceries Directly On WhatsApp
+            From Trusted Sources to Your Family's Table
           </h2>
           <p className="text-cream-200 text-sm sm:text-base leading-relaxed">
-            Send us your grocery list or simply tap the WhatsApp button on any product. Our friendly team
-            will pack your essentials, calculate discounts, and share door delivery tracking.
+            We bring together traditional groceries and carefully selected natural products to make
+            healthy living simpler. Discover authentic flavours, natural goodness and quality you can trust.
           </p>
-          <div className="pt-2">
-            <a
-              href={whatsappBannerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2.5 px-6 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-extrabold text-sm rounded-xl shadow-lg hover:shadow-xl transition-all"
+          <div className="flex flex-wrap gap-3 pt-2">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 text-white rounded-lg text-xs font-medium border border-white/20">
+              <Sprout className="w-3.5 h-3.5 text-amber-400" />
+              <span>Traditional Groceries</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-white/10 text-white rounded-lg text-xs font-medium border border-white/20">
+              <Truck className="w-3.5 h-3.5 text-amber-400" />
+              <span>Doorstep Delivery</span>
+            </div>
+            <Link
+              to="/products"
+              className="inline-flex items-center gap-2 px-7 py-3 bg-white text-forest-900 font-extrabold text-sm rounded-xl shadow-lg hover:bg-amber-100 hover:text-emerald-900 transition-all"
             >
-              <MessageCircle className="w-5 h-5 fill-slate-950" />
-              <span>Send Grocery List on WhatsApp</span>
-            </a>
+              Explore Our Products
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+            </Link>
           </div>
         </div>
       </section>

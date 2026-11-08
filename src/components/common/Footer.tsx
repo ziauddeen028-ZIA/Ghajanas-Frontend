@@ -12,12 +12,29 @@ import {
   Award,
 } from 'lucide-react';
 import { STORE_PHONE_NUMBER, generateWhatsAppLink } from '../../utils/whatsapp';
+import footerDesktopBg from '../../assets/footer-bg.png';
+import footerMobileBg from '../../assets/mobile/footer-bg-mobile.png';
 
 export const Footer: React.FC = () => {
   const whatsappUrl = generateWhatsAppLink('🌿 Hello Ghajanas! I would like to get more information about your products.');
 
   return (
-    <footer className="bg-forest-950 text-cream-200 pt-16 pb-8 border-t-4 border-amber-500">
+    <footer
+      className="relative isolate overflow-hidden text-cream-200 pt-16 pb-8 border-t-4 border-amber-500"
+      style={{ backgroundColor: '#003B28' }}
+    >
+      {/* Responsive Footer Background */}
+      <picture className="absolute inset-0 z-[-1] pointer-events-none">
+        <source
+          media="(max-width: 767px)"
+          srcSet={footerMobileBg}
+        />
+        <img
+          src={footerDesktopBg}
+          alt=""
+          className="w-full h-full object-cover object-center"
+        />
+      </picture>
       {/* Trust & Quality Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 mb-12">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 p-6 rounded-2xl bg-forest-900/80 border border-forest-800">

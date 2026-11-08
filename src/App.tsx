@@ -1,11 +1,11 @@
-import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { CartProvider } from './context/CartContext';
 import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
-import { Toast } from './components/common/Toast';
 import { CartDrawer } from './components/cart/CartDrawer';
+import { Toast } from './components/common/Toast';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AdminRoute } from './components/auth/AdminRoute';
 
@@ -24,14 +24,7 @@ import { AdminDashboardPage } from './pages/admin/AdminDashboardPage';
 import { AdminProductsPage } from './pages/admin/AdminProductsPage';
 import { AdminOrdersPage } from './pages/admin/AdminOrdersPage';
 
-// Scroll to top on route change
-const ScrollToTop: React.FC = () => {
-  const { pathname, search } = useLocation();
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, [pathname, search]);
-  return null;
-};
+import homeBg from './assets/home-bg.png';
 
 // 404 Not Found Page
 const NotFoundPage: React.FC = () => (
@@ -55,10 +48,20 @@ export const App: React.FC = () => {
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
-          <ScrollToTop />
-          <div className="flex flex-col min-h-screen bg-cream-100 text-slate-800">
+          <div
+            className="flex flex-col min-h-screen text-slate-800 relative"
+            style={{
+              backgroundImage: `
+      linear-gradient(rgba(255, 252, 246, 0.80), rgba(255, 252, 246, 0.80)),
+      url(${homeBg})
+    `,
+              backgroundSize: '100% 100%, 100% auto',
+              backgroundPosition: 'center, top center',
+              backgroundRepeat: 'no-repeat, repeat-y',
+            }}
+          >
             <Navbar />
-            <main className="flex-1">
+            <main className="flex-1 relative z-10">
               <Routes>
                 {/* Public Storefront Routes */}
                 <Route path="/" element={<HomePage />} />
