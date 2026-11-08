@@ -50,7 +50,7 @@ export const HeroBanner: React.FC = () => {
   };
 
   return (
-    <section className="relative w-full my-3 sm:my-5 group">
+    <section className="relative w-full mt-0 mb-3 sm:my-2 group">
 
       {/* Banner Container */}
       <div className="relative w-full overflow-hidden rounded-xl sm:rounded-2xl bg-cream-50">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import type { Product, WeightOption } from '../types';
 import { getProductById, getProducts } from '../services/catalogApi';
 import { useCart } from '../context/CartContext';
@@ -24,9 +24,7 @@ import {
 
 export const ProductDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
-  const { addToCart, setIsCartOpen } = useCart();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { addToCart, removeFromCart, updateQuantity, cart, setIsCartOpen, showToast } = useCart();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
@@ -35,7 +33,6 @@ export const ProductDetailPage: React.FC = () => {
 
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [selectedWeight, setSelectedWeight] = useState<WeightOption | null>(null);
-  const [quantity, setQuantity] = useState(1);
   const [isAddedFeedback, setIsAddedFeedback] = useState(false);
 
   const loadProductData = useCallback(async () => {
@@ -46,7 +43,6 @@ export const ProductDetailPage: React.FC = () => {
       const prod = await getProductById(slug);
       setProduct(prod);
       setActiveImageIndex(0);
-      setQuantity(1);
 
       if (prod.weightOptions && prod.weightOptions.length > 0) {
         setSelectedWeight(prod.weightOptions[0]);
@@ -128,21 +124,39 @@ export const ProductDetailPage: React.FC = () => {
     inStock: true,
   };
 
+  // Cart quantity for this product + selected weight (single source of truth)
+  const cartItem = cart.find(
+    (item) => item.productId === product.id && item.selectedWeight.id === currentWeight.id
+  );
+  const cartQty = cartItem?.quantity || 0;
+
   const discountPercent = calculateDiscountPercent(
     currentWeight.price,
     currentWeight.originalPrice
   );
 
   const handleAddToCart = () => {
-    const currentPath = location.pathname + location.search;
-    const added = addToCart(product, currentWeight, quantity, currentPath);
-    if (added) {
-      setIsAddedFeedback(true);
-      setTimeout(() => setIsAddedFeedback(false), 1800);
-      setIsCartOpen(true);
+    addToCart(product, currentWeight, 1);
+    showToast('Product added to cart');
+    setIsAddedFeedback(true);
+    setTimeout(() => setIsAddedFeedback(false), 1800);
+    setIsCartOpen(true);
+  };
+
+  const handleIncrement = () => {
+    if (!currentWeight.inStock) return;
+    if (currentWeight.stockCount !== undefined && cartQty + 1 > currentWeight.stockCount) return;
+    addToCart(product, currentWeight, 1);
+    showToast('Quantity updated');
+  };
+
+  const handleDecrement = () => {
+    if (cartQty <= 1) {
+      removeFromCart(product.id, currentWeight.id);
     } else {
-      navigate('/login', { state: { from: location } });
+      updateQuantity(product.id, currentWeight.id, cartQty - 1);
     }
+    showToast('Quantity updated');
   };
 
 
@@ -283,11 +297,13 @@ export const ProductDetailPage: React.FC = () => {
           {/* Dynamic Price Display */}
           <div className="bg-cream-50 p-4 rounded-2xl border border-cream-200 mb-6 flex flex-wrap items-baseline gap-3">
             <span className="font-serif font-black text-3xl text-forest-950">
-              {formatCurrency(currentWeight.price * quantity)}
+              {formatCurrency(cartQty === 0 ? currentWeight.price : currentWeight.price * cartQty)}
             </span>
             {currentWeight.originalPrice && currentWeight.originalPrice > currentWeight.price && (
               <span className="text-sm text-slate-400 line-through">
-                {formatCurrency(currentWeight.originalPrice * quantity)}
+                {formatCurrency(
+                  cartQty === 0 ? currentWeight.originalPrice : currentWeight.originalPrice * cartQty
+                )}
               </span>
             )}
             <span className="w-full sm:w-auto sm:ml-auto text-center sm:text-right text-[11px] text-emerald-700 font-semibold flex items-center gap-1">
@@ -305,16 +321,18 @@ export const ProductDetailPage: React.FC = () => {
               <div className="flex items-center border border-cream-300 rounded-xl bg-white overflow-hidden shadow-xs">
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                  className="p-2 hover:bg-cream-100 text-slate-600 transition-colors"
+                  onClick={handleDecrement}
+                  disabled={!currentWeight.inStock || cartQty <= 1}
+                  className="p-2 hover:bg-cream-100 text-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Minus className="w-4 h-4" />
                 </button>
-                <span className="px-4 text-sm font-black text-slate-800">{quantity}</span>
+                <span className="px-4 text-sm font-black text-slate-800">{cartQty}</span>
                 <button
                   type="button"
-                  onClick={() => setQuantity((q) => q + 1)}
-                  className="p-2 hover:bg-cream-100 text-slate-600 transition-colors"
+                  onClick={handleIncrement}
+                  disabled={!currentWeight.inStock || (currentWeight.stockCount !== undefined && cartQty >= currentWeight.stockCount)}
+                  className="p-2 hover:bg-cream-100 text-slate-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Plus className="w-4 h-4" />
                 </button>

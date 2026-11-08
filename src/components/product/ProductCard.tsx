@@ -130,7 +130,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           </button>
 
           {isWeightDropdownOpen && (
-            <div className="weight-dropdown-menu absolute z-[60] mt-1 w-full bg-white border border-cream-200 rounded-xl shadow-lg shadow-forest-500/10 py-2 overflow-hidden transition-all duration-200 ease-out">
+            <div className="weight-dropdown-menu absolute z-[30] mt-1 w-full bg-white border border-cream-200 rounded-xl shadow-lg shadow-forest-500/10 py-2 overflow-hidden transition-all duration-200 ease-out">
               {product.weightOptions.map((opt) => {
                 const isSelected = selectedWeight.id === opt.id;
                 return (

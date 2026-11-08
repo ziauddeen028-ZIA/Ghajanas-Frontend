@@ -54,7 +54,7 @@ export const HomePage: React.FC = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-4">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-[100px] sm:pt-0 sm:pb-4">
       {/* Hero Section */}
       <HeroBanner />
 
