@@ -20,7 +20,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="my-8">
+      <div className="my-12">
         {title && (
           <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-2 border-b border-cream-200 pb-4">
             <div>
@@ -35,7 +35,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
             {subtitle && <p className="text-sm text-slate-500">{subtitle}</p>}
           </div>
         )}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-x-4 sm:gap-x-6 gap-y-16 sm:gap-y-18">
           {[...Array(4)].map((_, i) => (
             <div
               key={i}
@@ -66,7 +66,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
   }
 
   return (
-    <div className="my-8">
+    <div className="my-12">
       {title && (
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-2 border-b border-cream-200 pb-4">
           <div>
@@ -82,7 +82,7 @@ export const ProductGrid: React.FC<ProductGridProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 items-start gap-x-4 sm:gap-x-6 gap-y-14 sm:gap-y-16">
         {products.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}

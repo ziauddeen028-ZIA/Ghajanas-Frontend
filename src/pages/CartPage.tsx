@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { formatCurrency } from '../utils/formatters';
 import { generateWhatsAppLink, STORE_PHONE_NUMBER } from '../utils/whatsapp';
 import type { CartItem } from '../types';
@@ -28,10 +29,19 @@ export const CartPage: React.FC = () => {
     totalSavings,
     clearCart,
   } = useCart();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
 
   const amountNeededForFreeDelivery = Math.max(0, freeDeliveryThreshold - subtotal);
   const progressPercent = Math.min(100, Math.round((subtotal / freeDeliveryThreshold) * 100));
+
+  const handleProceedToCheckout = () => {
+    if (user && token) {
+      navigate('/checkout');
+    } else {
+      navigate('/login');
+    }
+  };
 
   const handleWhatsAppCartOrder = () => {
     const itemLines = cart
@@ -239,7 +249,7 @@ export const CartPage: React.FC = () => {
 
           <div className="pt-3 space-y-2.5">
             <button
-              onClick={() => navigate('/checkout')}
+              onClick={handleProceedToCheckout}
               className="w-full py-3.5 px-4 bg-forest-900 hover:bg-forest-950 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all"
             >
               <span>Proceed to Checkout</span>

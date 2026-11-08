@@ -1,12 +1,6 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
-import {
-  Star,
-  ShoppingBag,
-  Check,
-  MapPin,
-  Sparkles,
-} from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Check, ChevronDown, Minus, Plus } from 'lucide-react';
 import type { Product, WeightOption } from '../../types';
 import { useCart } from '../../context/CartContext';
 import { formatCurrency, calculateDiscountPercent } from '../../utils/formatters';
@@ -16,9 +10,7 @@ interface ProductCardProps {
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
-  const { addToCart } = useCart();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const { addToCart, removeFromCart, updateQuantity, cart, showToast } = useCart();
   const [selectedWeight, setSelectedWeight] = useState<WeightOption>(
     product.weightOptions[0] || {
       id: 'default',
@@ -27,53 +19,86 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
       inStock: true,
     }
   );
-  const [isAddedRecently, setIsAddedRecently] = useState(false);
+  const [isWeightDropdownOpen, setIsWeightDropdownOpen] = useState(false);
 
   const discountPercent = calculateDiscountPercent(
     selectedWeight.price,
     selectedWeight.originalPrice
   );
 
-  const handleAddToCart = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    const currentPath = location.pathname + location.search;
-    const added = addToCart(product, selectedWeight, 1, currentPath);
-    if (added) {
-      setIsAddedRecently(true);
-      setTimeout(() => setIsAddedRecently(false), 1600);
-    } else {
-      navigate('/login', { state: { from: location } });
+  const cartItem = cart.find(
+    (item) => item.productId === product.id && item.selectedWeight.id === selectedWeight.id
+  );
+  const cartQty = cartItem?.quantity || 0;
+
+  const handleWeightSelect = (opt: WeightOption) => {
+    setSelectedWeight(opt);
+    setIsWeightDropdownOpen(false);
+  };
+
+  const handleClickOutside = (e: MouseEvent) => {
+    const dropdownRef = document.querySelector('.weight-dropdown-menu');
+    const triggerRef = document.querySelector('.weight-dropdown-trigger');
+    if (dropdownRef && !dropdownRef.contains(e.target as Node) &&
+        triggerRef && !triggerRef.contains(e.target as Node)) {
+      setIsWeightDropdownOpen(false);
     }
   };
 
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') setIsWeightDropdownOpen(false);
+  };
+
+  React.useEffect(() => {
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  const handleIncrement = () => {
+    if (!selectedWeight.inStock) return;
+    if (selectedWeight.stockCount !== undefined && cartQty + 1 > selectedWeight.stockCount) return;
+    addToCart(product, selectedWeight, 1);
+    showToast('Quantity updated');
+  };
+
+  const handleDecrement = () => {
+    if (cartQty <= 1) {
+      removeFromCart(product.id, selectedWeight.id);
+    } else {
+      updateQuantity(product.id, selectedWeight.id, cartQty - 1);
+      showToast('Quantity updated');
+    }
+  };
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addToCart(product, selectedWeight, 1);
+    showToast('Product added to cart');
+  };
+
   return (
-    <div className="group relative bg-white rounded-2xl overflow-hidden border border-cream-200/90 shadow-card hover:shadow-card-hover transition-all duration-300 flex flex-col h-full">
-      {/* Badges Overlay */}
-      <div className="absolute top-3 left-3 z-10 flex flex-col gap-1 items-start">
-        {product.badge && (
-          <span className="px-2.5 py-1 bg-amber-500 text-slate-950 text-[10px] font-extrabold uppercase tracking-wider rounded-lg shadow-sm">
-            {product.badge}
+    <div className="relative mb-0 self-start bg-white border border-cream-200 shadow-card rounded-2xl flex flex-col h-auto transition-all duration-300 group hover:shadow-card-hover overflow-visible">
+      <div className="absolute top-3 left-3 z-30 flex flex-col gap-2">
+        {discountPercent > 0 && (
+          <span className="px-2 py-1 bg-amber-500 text-white text-[10px] font-bold rounded-md shadow-sm">
+            {discountPercent}% OFF
           </span>
         )}
-        {product.isOrganic && (
-          <span className="px-2 py-0.5 bg-emerald-600 text-white text-[10px] font-bold rounded-md flex items-center gap-1 shadow-sm">
-            <Sparkles className="w-2.5 h-2.5" />
-            100% Pure
+        {product.badge && (
+          <span className="px-2 py-1 bg-forest-900 text-cream-100 text-[10px] font-bold rounded-md shadow-sm">
+            {product.badge}
           </span>
         )}
       </div>
 
-      {discountPercent > 0 && (
-        <span className="absolute top-3 right-3 z-10 px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-black rounded-lg">
-          {discountPercent}% OFF
-        </span>
-      )}
-
-      {/* Product Image */}
       <Link
         to={`/product/${product.slug}`}
-        className="block relative aspect-square overflow-hidden bg-cream-50"
+        className="block relative aspect-square overflow-hidden rounded-t-2xl bg-cream-50"
       >
         <img
           src={product.images[0]}
@@ -81,113 +106,97 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
           loading="lazy"
           className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       </Link>
 
-      {/* Card Body */}
-      <div className="p-4 flex flex-col flex-1">
-        {/* Origin & Category */}
-        <div className="flex items-center justify-between text-[11px] text-slate-500 mb-1.5">
-          <span className="font-semibold text-forest-700 tracking-wide uppercase">
-            {product.categoryName}
-          </span>
-          <span className="flex items-center gap-0.5 text-slate-400">
-            <MapPin className="w-3 h-3 text-amber-600" />
-            {product.origin.split(',')[0]}
-          </span>
-        </div>
-
-        {/* Title */}
-        <Link to={`/product/${product.slug}`} className="block mb-1 group-hover:text-forest-800 transition-colors">
-          <h3 className="font-serif font-bold text-slate-900 text-base leading-snug line-clamp-2">
+      <div className="p-3 sm:p-4 pb-16 flex flex-col">
+        <Link to={`/product/${product.slug}`} className="block mb-2 group-hover:text-forest-800 transition-colors">
+          <h3 className="font-serif font-bold text-slate-900 text-sm leading-tight line-clamp-1">
             {product.name}
           </h3>
         </Link>
 
-        {product.tamilName && (
-          <p className="text-xs font-medium text-emerald-800 mb-2">
-            {product.tamilName}
-          </p>
-        )}
+        <div className="relative mb-3 z-50">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsWeightDropdownOpen(!isWeightDropdownOpen);
+            }}
+            className="weight-dropdown-trigger w-full px-3 py-2.5 bg-white border border-cream-200 rounded-xl text-sm font-medium text-forest-900 shadow-sm hover:border-amber-500 focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 outline-none flex items-center justify-between transition-all"
+          >
+            <span>{selectedWeight.label}</span>
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isWeightDropdownOpen ? 'rotate-180' : ''}`} />
+          </button>
 
-        {/* Rating */}
-        <div className="flex items-center gap-1 mb-3">
-          <div className="flex items-center text-amber-500">
-            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-            <span className="text-xs font-bold text-slate-800 ml-1">{product.rating}</span>
-          </div>
-          <span className="text-xs text-slate-400">({product.reviewCount})</span>
+          {isWeightDropdownOpen && (
+            <div className="weight-dropdown-menu absolute z-[60] mt-1 w-full bg-white border border-cream-200 rounded-xl shadow-lg shadow-forest-500/10 py-2 overflow-hidden transition-all duration-200 ease-out">
+              {product.weightOptions.map((opt) => {
+                const isSelected = selectedWeight.id === opt.id;
+                return (
+                  <button
+                    key={opt.id}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleWeightSelect(opt);
+                    }}
+                    className={`w-full flex items-center justify-between px-3 py-2 text-sm font-medium transition-colors ${isSelected ? 'bg-amber-50 text-forest-900 font-bold border-l-2 border-l-amber-600' : 'text-slate-700 hover:bg-cream-50 hover:text-forest-900'}`}
+                  >
+                    <span>{opt.label}</span>
+                    {isSelected && <Check className="w-3.5 h-3.5 text-amber-600" />}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Weight Selector Pills */}
-        <div className="mb-4 mt-auto">
-          <span className="block text-[11px] font-semibold text-slate-500 mb-1.5 uppercase tracking-wider">
-            Select Size / Weight:
-          </span>
-          <div className="flex flex-wrap gap-1.5">
-            {product.weightOptions.map((opt) => {
-              const isSelected = selectedWeight.id === opt.id;
-              return (
-                <button
-                  key={opt.id}
-                  type="button"
-                  onClick={() => setSelectedWeight(opt)}
-                  className={`text-xs px-2.5 py-1 rounded-lg font-semibold transition-all ${
-                    isSelected
-                      ? 'bg-forest-900 text-white shadow-sm ring-1 ring-forest-900'
-                      : 'bg-cream-100 hover:bg-cream-200 text-slate-700 border border-cream-300'
-                  }`}
-                >
-                  {opt.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Pricing */}
-        <div className="flex items-baseline gap-2 mb-3 pt-2 border-t border-cream-200">
-          <span className="font-serif font-extrabold text-xl text-forest-950">
+        <div className="flex items-baseline gap-2 mb-2">
+          <span className="font-serif font-extrabold text-amber-700 text-lg">
             {formatCurrency(selectedWeight.price)}
           </span>
           {selectedWeight.originalPrice && selectedWeight.originalPrice > selectedWeight.price && (
-            <span className="text-xs text-slate-400 line-through">
+            <span className="text-slate-400 line-through text-xs">
               {formatCurrency(selectedWeight.originalPrice)}
             </span>
           )}
-          <span className="text-[11px] text-emerald-700 font-semibold ml-auto">
-            {selectedWeight.inStock ? 'In Stock' : 'Out of Stock'}
-          </span>
         </div>
 
-        {/* Action Buttons */}
-        <div className="w-full">
+        {cartQty > 0 ? (
+          <div className="absolute bottom-[-14px] left-1/2 -translate-x-1/2 z-40 flex items-center gap-1.5 bg-white border-2 border-amber-500 rounded-full px-3 py-1.5 shadow-xl transition-all duration-200">
+            <button
+              type="button"
+              onClick={handleDecrement}
+              disabled={!selectedWeight.inStock}
+              className="w-6 h-6 rounded-full bg-cream-50 flex items-center justify-center text-amber-600 hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Decrease quantity"
+            >
+              <Minus className="w-3 h-3" />
+            </button>
+            <span className="font-serif font-bold text-forest-900 text-sm min-w-[16px] text-center">
+              {cartQty}
+            </span>
+            <button
+              type="button"
+              onClick={handleIncrement}
+              disabled={!selectedWeight.inStock || (selectedWeight.stockCount !== undefined && cartQty >= selectedWeight.stockCount)}
+              className="w-6 h-6 rounded-full bg-cream-50 flex items-center justify-center text-amber-600 hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              aria-label="Increase quantity"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          </div>
+        ) : (
           <button
             type="button"
             onClick={handleAddToCart}
             disabled={!selectedWeight.inStock}
-            className={`w-full py-2.5 px-3 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 transition-all shadow-sm ${
-              isAddedRecently
-                ? 'bg-emerald-600 text-white'
-                : selectedWeight.inStock
-                ? 'bg-forest-900 hover:bg-forest-950 text-white'
-                : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-            }`}
+            className={`absolute bottom-[-14px] left-1/2 -translate-x-1/2 z-40 w-10 h-10 rounded-full flex items-center justify-center transition-all shadow-xl border-2 ${selectedWeight.inStock ? 'bg-white border-amber-600 hover:bg-amber-50 hover:border-amber-800 text-amber-600' : 'bg-slate-100 border-slate-200 text-slate-400 cursor-not-allowed'}`}
           >
-            {isAddedRecently ? (
-              <>
-                <Check className="w-4 h-4" />
-                Added to Cart
-              </>
-            ) : (
-              <>
-                <ShoppingBag className="w-4 h-4 text-amber-400" />
-                Add to Cart
-              </>
-            )}
+            <Plus className="w-4 h-4" />
           </button>
-
-        </div>
+        )}
       </div>
     </div>
   );

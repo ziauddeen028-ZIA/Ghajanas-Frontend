@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
-import type { CartItem, Product, WeightOption, PendingCartAction } from '../types';
+import type { CartItem, Product, WeightOption } from '../types';
 import { useAuth } from './AuthContext';
 import {
   getCustomerCart,
@@ -8,6 +8,8 @@ import {
   removeCartItemApi,
   clearCustomerCartApi,
 } from '../services/cartApi';
+
+const GUEST_CART_STORAGE_KEY = 'ghajanas_guest_cart';
 
 interface CartContextType {
   cart: CartItem[];
@@ -34,13 +36,34 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 const FREE_DELIVERY_THRESHOLD = 500;
 const STANDARD_DELIVERY_FEE = 40;
 
+const loadGuestCartFromStorage = (): CartItem[] => {
+  try {
+    const raw = localStorage.getItem(GUEST_CART_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed;
+    return [];
+  } catch {
+    return [];
+  }
+};
+
+const saveGuestCartToStorage = (cart: CartItem[]) => {
+  try {
+    localStorage.setItem(GUEST_CART_STORAGE_KEY, JSON.stringify(cart));
+  } catch {
+    // localStorage unavailable or quota exceeded; silently ignore
+  }
+};
+
 export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, token, setPendingCartAction, consumePendingCartAction } = useAuth();
+  const { user, token, consumePendingCartAction } = useAuth();
 
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [hydrated, setHydrated] = useState(false);
 
   // Keep a ref to the current token to prevent stale closures during async operations
   const tokenRef = useRef<string | null>(token);
@@ -56,6 +79,18 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   /**
+   * Persist cart to localStorage for guests whenever cart changes.
+   */
+  const persistCart = useCallback(
+    (nextCart: CartItem[]) => {
+      if (!tokenRef.current) {
+        saveGuestCartToStorage(nextCart);
+      }
+    },
+    []
+  );
+
+  /**
    * Load customer cart from PostgreSQL on login or page refresh.
    */
   const loadCustomerCart = useCallback(async (authToken: string) => {
@@ -63,31 +98,69 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const dbCart = await getCustomerCart(authToken);
       setCart(dbCart);
+      setHydrated(true);
     } catch (err: any) {
       console.error('Failed to load cart from database:', err);
+      setHydrated(true);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  // Whenever user or token changes, load customer's database cart or clear for guests
+  /**
+   * Initialize cart: load guest cart from localStorage if not authenticated,
+   * or wait for auth to load DB cart.
+   */
   useEffect(() => {
     if (user && token) {
+      // Authenticated: load DB cart (will merge guest items below)
       loadCustomerCart(token);
-    } else {
-      setCart([]);
+    } else if (!hydrated) {
+      // Guest: load from localStorage, don't overwrite with empty state
+      const guestCart = loadGuestCartFromStorage();
+      setCart(guestCart);
+      setHydrated(true);
+      setIsLoading(false);
     }
-  }, [user, token, loadCustomerCart]);
+  }, [user, token, hydrated, loadCustomerCart]);
+
+  /**
+   * When user logs in, merge guest localStorage cart with database cart.
+   * Database becomes source of truth after merge; guest items are added if missing.
+   */
+  useEffect(() => {
+    if (!user || !token || !hydrated) return;
+
+    const guestCart = loadGuestCartFromStorage();
+    if (!guestCart || guestCart.length === 0) return;
+
+    // Merge: add guest items that don't already exist in DB cart
+    // We do this optimistically by appending unique guest items to current cart
+    setCart((prev) => {
+      const merged = [...prev];
+      for (const guestItem of guestCart) {
+        const exists = merged.find(
+          (item) => item.productId === guestItem.productId && item.selectedWeight.id === guestItem.selectedWeight.id
+        );
+        if (!exists) {
+          merged.push(guestItem);
+        } else {
+          // Combine quantities for duplicate product+weight
+          exists.quantity += guestItem.quantity;
+        }
+      }
+      saveGuestCartToStorage([]); // Clear guest cart after merge
+      showToast('Cart synchronized with your account');
+      return merged;
+    });
+  }, [user, token, hydrated, showToast]);
 
   /**
    * Internal helper to persist cart item to PostgreSQL and update UI state.
    */
   const executeAddToCart = useCallback(
     async (product: Product, weight: WeightOption, quantity: number = 1) => {
-      const currentToken = tokenRef.current;
-      if (!currentToken) return;
-
-      // Optimistic local update
+      // Optimistic local update - works for both guests and authenticated users
       setCart((prev) => {
         const existingIndex = prev.findIndex(
           (item) => item.productId === product.id && item.selectedWeight.id === weight.id
@@ -99,10 +172,11 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             ...next[existingIndex],
             quantity: next[existingIndex].quantity + quantity,
           };
+          persistCart(next);
           return next;
         }
 
-        return [
+        const next = [
           ...prev,
           {
             productId: product.id,
@@ -114,12 +188,19 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
             quantity,
           },
         ];
+        persistCart(next);
+        return next;
       });
+
+      const currentToken = tokenRef.current;
+      if (!currentToken) {
+        return; // Guests: local state updated, no DB sync
+      }
 
       try {
         const result = await addCartItemApi(product.id, weight.id, quantity, currentToken);
         setCart(result.cart);
-        showToast(result.message || `Added ${quantity}x ${product.name} (${weight.label}) to cart`);
+        persistCart(result.cart);
       } catch (err: any) {
         console.error('Database add to cart failed:', err);
         showToast(err.message || 'Failed to add item to cart');
@@ -127,38 +208,23 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         try {
           const freshCart = await getCustomerCart(currentToken);
           setCart(freshCart);
+          persistCart(freshCart);
         } catch {}
       }
     },
-    [showToast]
+    [showToast, persistCart]
   );
 
   /**
    * Public Add to Cart method.
-   * Enforces verified customer login:
-   * If customer is not logged in, captures product, variant, quantity, and return URL,
-   * stores pending action, shows message, and directs customer to login.
+   * Works for both authenticated customers and guests.
+   * Guests keep items in local cart state; authenticated users also sync to PostgreSQL.
    */
   const addToCart = (
     product: Product,
     weight: WeightOption,
-    quantity: number = 1,
-    returnUrl?: string
+    quantity: number = 1
   ): boolean => {
-    if (!user || !token) {
-      const currentPath = returnUrl || window.location.pathname + window.location.search;
-      const pending: PendingCartAction = {
-        product,
-        selectedWeight: weight,
-        quantity,
-        returnUrl: currentPath,
-      };
-
-      setPendingCartAction(pending);
-      showToast('Please sign in to add items to your cart.');
-      return false;
-    }
-
     executeAddToCart(product, weight, quantity);
     return true;
   };
@@ -189,24 +255,32 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const currentToken = tokenRef.current;
 
       // Optimistic removal
-      setCart((prev) => prev.filter((item) => item.selectedWeight.id !== weightId));
+      setCart((prev) => {
+        const next = prev.filter((item) => item.selectedWeight.id !== weightId);
+        persistCart(next);
+        return next;
+      });
 
       if (currentToken) {
         try {
           const updated = await removeCartItemApi(weightId, currentToken);
           setCart(updated);
-          showToast('Item removed from cart');
+          persistCart(updated);
+          showToast('Product removed from cart');
         } catch (err: any) {
           console.error('Database remove item failed:', err);
           showToast(err.message || 'Failed to remove item');
           try {
             const fresh = await getCustomerCart(currentToken);
             setCart(fresh);
+            persistCart(fresh);
           } catch {}
         }
+      } else {
+        showToast('Product removed from cart');
       }
     },
-    [showToast]
+    [showToast, persistCart]
   );
 
   /**
@@ -222,27 +296,34 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       // Optimistic update
-      setCart((prev) =>
-        prev.map((item) =>
+      setCart((prev) => {
+        const next = prev.map((item) =>
           item.selectedWeight.id === weightId ? { ...item, quantity } : item
-        )
-      );
+        );
+        persistCart(next);
+        return next;
+      });
 
       if (currentToken) {
         try {
           const updated = await updateCartItemQtyApi(weightId, quantity, currentToken);
           setCart(updated);
+          persistCart(updated);
+          showToast('Quantity updated');
         } catch (err: any) {
           console.error('Database update quantity failed:', err);
           showToast(err.message || 'Failed to update item quantity');
           try {
             const fresh = await getCustomerCart(currentToken);
             setCart(fresh);
+            persistCart(fresh);
           } catch {}
         }
+      } else {
+        showToast('Quantity updated');
       }
     },
-    [removeFromCart, showToast]
+    [removeFromCart, showToast, persistCart]
   );
 
   /**
@@ -251,6 +332,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const clearCart = useCallback(async () => {
     const currentToken = tokenRef.current;
     setCart([]);
+    persistCart([]);
 
     if (currentToken) {
       try {
@@ -259,7 +341,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error('Database clear cart failed:', err);
       }
     }
-  }, []);
+  }, [persistCart]);
 
   const totalItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 

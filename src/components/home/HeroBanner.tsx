@@ -1,101 +1,125 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, ShieldCheck, Award } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+// Desktop Images
+import hero1 from '../../assets/hero1.png';
+import hero2 from '../../assets/hero2.png';
+import hero3 from '../../assets/hero3.png';
+
+// Mobile Images
+import mobileHero1 from '../../assets/mobile/hero-mobile-1.png';
+import mobileHero2 from '../../assets/mobile/hero-mobile-2.png';
+import mobileHero3 from '../../assets/mobile/hero-mobile-3.png';
+
+const banners = [
+  {
+    desktop: hero1,
+    mobile: mobileHero1,
+  },
+  {
+    desktop: hero2,
+    mobile: mobileHero2,
+  },
+  {
+    desktop: hero3,
+    mobile: mobileHero3,
+  },
+];
 
 export const HeroBanner: React.FC = () => {
+  const [currentSlide, setCurrentSlide] = useState(0);
 
+  // Automatic sliding
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % banners.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % banners.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide(
+      (prev) => (prev - 1 + banners.length) % banners.length
+    );
+  };
 
   return (
-    <div className="relative overflow-hidden bg-gradient-to-br from-forest-950 via-forest-900 to-emerald-950 text-white rounded-3xl my-6 border border-forest-800 shadow-2xl">
-      {/* Decorative background blurs */}
-      <div className="absolute -top-20 -right-20 w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-20 -left-20 w-64 h-64 sm:w-80 sm:h-80 lg:w-96 lg:h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+    <section className="relative w-full my-3 sm:my-5 group">
 
-      <div className="max-w-7xl mx-auto px-6 sm:px-10 py-8 sm:py-12 md:py-20 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 sm:gap-10 items-center">
-        {/* Left Column Text */}
-        <div className="lg:col-span-7 space-y-5 sm:space-y-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs font-bold tracking-wide">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-            <span>Farm-Fresh • Chemical-Free • Unpolished</span>
-          </div>
+      {/* Banner Container */}
+      <div className="relative w-full overflow-hidden rounded-xl sm:rounded-2xl bg-cream-50">
 
-          <h1 className="font-serif font-extrabold text-3xl sm:text-4xl md:text-5xl lg:text-5xl leading-[1.15] text-white tracking-tight">
-            Nourish Your Family With Pure, Traditional & Organic Essentials
-          </h1>
+        {banners.map((banner, index) => (
+          <Link
+            to="/products"
+            key={index}
+            className={`block w-full transition-opacity duration-700 ${
+              currentSlide === index
+                ? 'opacity-100 relative z-10'
+                : 'opacity-0 absolute inset-0 pointer-events-none'
+            }`}
+          >
+            <picture>
+              {/* Mobile Image */}
+              <source
+                media="(max-width: 639px)"
+                srcSet={banner.mobile}
+              />
 
-          <p className="text-amber-300/90 font-medium text-sm sm:text-base tracking-wide">
-            பாரம்பரிய ஆரோக்கியம், உங்கள் இல்லம் தேடி • Straight from Cauvery Delta & Western Ghats
-          </p>
+              {/* Desktop Image */}
+              <img
+                src={banner.desktop}
+                alt={`Ghajanas promotional banner ${index + 1}`}
+                className="w-full h-auto block"
+                loading={index === 0 ? 'eager' : 'lazy'}
+              />
+            </picture>
+          </Link>
+        ))}
 
-          <p className="text-cream-200/90 text-sm sm:text-base leading-relaxed max-w-xl">
-            Rediscover the authentic taste and health of native Indian groceries. Handcrafted{' '}
-            <strong className="text-white">Naatu Sakkarai</strong>, ancient red and black rice varieties like{' '}
-            <strong className="text-white">Mappillai Samba</strong> &{' '}
-            <strong className="text-white">Karuppu Kavuni</strong>, farm-direct millets, wild forest honey, and
-            royal imported dates.
-          </p>
+        {/* Previous Button */}
+        <button
+          onClick={prevSlide}
+          aria-label="Previous banner"
+          className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20
+          w-8 h-8 sm:w-12 sm:h-12 rounded-full
+          bg-white/90 text-forest-900 shadow-lg
+          flex items-center justify-center
+          hover:bg-forest-900 hover:text-white
+          transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+        >
+          <ChevronLeft size={22} />
+        </button>
 
-          {/* Action CTAs */}
-          <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-2">
-            <Link
-              to="/products"
-              className="px-6 py-3.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-sm rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center gap-2 group"
-            >
-              <span>Explore All Essentials</span>
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
+        {/* Next Button */}
+        <button
+          onClick={nextSlide}
+          aria-label="Next banner"
+          className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20
+          w-8 h-8 sm:w-12 sm:h-12 rounded-full
+          bg-white/90 text-forest-900 shadow-lg
+          flex items-center justify-center
+          hover:bg-forest-900 hover:text-white
+          transition-all opacity-100 sm:opacity-0 sm:group-hover:opacity-100"
+        >
+          <ChevronRight size={22} />
+        </button>
+
+        {/* Pagination Dots */}
+        <div className="absolute bottom-3 sm:bottom-5 left-1/2
+          -translate-x-1/2 flex items-center gap-2 z-20">
 
 
-          </div>
 
-          {/* Key Trust Counters */}
-          <div className="pt-6 border-t border-forest-800/80 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-left">
-            <div>
-              <p className="font-serif font-black text-xl sm:text-2xl text-amber-400">100%</p>
-              <p className="text-xs text-cream-300">Pure & Native</p>
-            </div>
-            <div>
-              <p className="font-serif font-black text-xl sm:text-2xl text-amber-400">500+</p>
-              <p className="text-xs text-cream-300">Delta Farmers</p>
-            </div>
-            <div>
-              <p className="font-serif font-black text-xl sm:text-2xl text-amber-400">₹0 Fee</p>
-              <p className="text-xs text-cream-300">Orders Above ₹500</p>
-            </div>
-          </div>
         </div>
 
-        {/* Right Column Visual Card */}
-        <div className="lg:col-span-5 relative">
-          <div className="relative mx-auto max-w-sm sm:max-w-md lg:max-w-sm rounded-3xl overflow-hidden shadow-2xl border-2 border-forest-700/60 bg-forest-900/60 backdrop-blur-md p-3">
-            <img
-              src="https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=800&q=80"
-              alt="Organic Naatu Sakkarai and Traditional Rice"
-              className="w-full h-64 sm:h-72 lg:h-80 object-cover rounded-2xl"
-            />
-            {/* Overlay badge 1 */}
-            <div className="absolute top-6 left-6 bg-forest-950/90 border border-forest-700 backdrop-blur-md px-3.5 py-2 rounded-xl flex items-center gap-2 shadow-lg">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
-              <div className="text-left">
-                <p className="text-[10px] text-cream-300 font-semibold uppercase">Zero Sulfur</p>
-                <p className="text-xs font-bold text-white">Authentic Naatu Sakkarai</p>
-              </div>
-            </div>
-
-            {/* Overlay badge 2 */}
-            <div className="absolute bottom-6 right-6 bg-white/95 text-slate-900 px-4 py-2.5 rounded-2xl flex items-center gap-2.5 shadow-xl">
-              <div className="p-1.5 bg-amber-500/20 text-amber-600 rounded-lg">
-                <Award className="w-4 h-4" />
-              </div>
-              <div className="text-left">
-                <p className="text-xs font-black text-slate-900">Tamil Nadu GI Harvests</p>
-                <p className="text-[10px] text-slate-500 font-medium">Heirloom Rice & Karupatti</p>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
-    </div>
+    </section>
   );
 };

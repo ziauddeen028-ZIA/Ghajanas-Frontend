@@ -11,6 +11,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
 import { formatCurrency } from '../../utils/formatters';
 
 export const CartDrawer: React.FC = () => {
@@ -27,6 +28,7 @@ export const CartDrawer: React.FC = () => {
     totalSavings,
     clearCart,
   } = useCart();
+  const { user, token } = useAuth();
   const navigate = useNavigate();
 
   if (!isCartOpen) return null;
@@ -36,7 +38,11 @@ export const CartDrawer: React.FC = () => {
 
   const handleProceedToCheckout = () => {
     setIsCartOpen(false);
-    navigate('/checkout');
+    if (user && token) {
+      navigate('/checkout');
+    } else {
+      navigate('/login');
+    }
   };
 
   return (

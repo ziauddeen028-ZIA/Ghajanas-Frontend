@@ -60,12 +60,7 @@ export const Navbar: React.FC = () => {
   };
 
   const handleCartClick = () => {
-    if (!user) {
-      // Require login for cart access
-      navigate('/login', { state: { from: { pathname: '/cart' } } });
-    } else {
-      setIsCartOpen(true);
-    }
+    setIsCartOpen(true);
   };
 
   const handleLogout = async () => {
@@ -251,6 +246,7 @@ export const Navbar: React.FC = () => {
               )}
 
               {/* Cart Button (Requires Login) */}
+              {/* Cart Button - Accessible to Guests and Authenticated Users */}
               <button
                 onClick={handleCartClick}
                 className="relative flex items-center gap-2.5 px-3.5 py-2 bg-forest-900 hover:bg-forest-950 text-white rounded-xl shadow-md hover:shadow-lg transition-all group"

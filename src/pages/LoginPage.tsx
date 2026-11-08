@@ -23,11 +23,8 @@ export const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Determine destination after successful sign in
-  const redirectDestination =
-    location.state?.from?.pathname ||
-    pendingCartAction?.returnUrl ||
-    '/';
+  // After successful sign in, always redirect to checkout (cart is preserved)
+  const redirectDestination = '/checkout';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
