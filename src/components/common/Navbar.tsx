@@ -21,7 +21,7 @@ import { STORE_PHONE_NUMBER, generateWhatsAppLink } from '../../utils/whatsapp';
 import { formatCurrency } from '../../utils/formatters';
 
 export const Navbar: React.FC = () => {
-  const { totalItemCount, subtotal, setIsCartOpen } = useCart();
+  const { totalItemCount, subtotal, isCartOpen, setIsCartOpen } = useCart();
   const { user, isAdmin, logout, profile } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -60,7 +60,7 @@ export const Navbar: React.FC = () => {
   };
 
   const handleCartClick = () => {
-    setIsCartOpen(true);
+    setIsCartOpen(!isCartOpen);
   };
 
   const handleLogout = async () => {

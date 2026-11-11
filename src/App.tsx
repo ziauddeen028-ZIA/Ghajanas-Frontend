@@ -6,6 +6,7 @@ import { Navbar } from './components/common/Navbar';
 import { Footer } from './components/common/Footer';
 import { CartDrawer } from './components/cart/CartDrawer';
 import { Toast } from './components/common/Toast';
+import { ScrollToTop } from './components/common/ScrollToTop';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { AdminRoute } from './components/auth/AdminRoute';
 
@@ -48,6 +49,7 @@ export const App: React.FC = () => {
     <BrowserRouter>
       <AuthProvider>
         <CartProvider>
+          <ScrollToTop />
           <div
             className="flex flex-col min-h-screen text-slate-800 relative"
             style={{
